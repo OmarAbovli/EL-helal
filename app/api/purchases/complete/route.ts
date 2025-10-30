@@ -8,16 +8,16 @@ export async function POST(req: Request) {
     const claim = String(body.claim ?? '').trim()
     if (!claim) return NextResponse.json({ ok: false, error: 'missing_claim' }, { status: 400 })
 
-    const rows = (await sql`SELECT id, customer_name, customer_phone, months, status FROM purchases WHERE claim_token = ${claim} LIMIT 1`) as any[]
+    const rows = (await sql`SELECT id, customer_name, customer_phone, months, status, username, password_hash FROM purchases WHERE claim_token = ${claim} LIMIT 1`) as any[]
     const p = rows[0]
     if (!p) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
     if (p.status !== 'paid') return NextResponse.json({ ok: false, error: 'not_paid' }, { status: 400 })
 
-    // create student user (temporary, without username/password)
+    // create student user
     const userId = 's_' + randomUUID()
     await sql`
-      INSERT INTO users (id, role, name, phone, created_at)
-      VALUES (${userId}, 'student', ${p.customer_name}, ${p.customer_phone}, NOW())
+      INSERT INTO users (id, role, name, phone, username, password_hash, created_at)
+      VALUES (${userId}, 'student', ${p.customer_name}, ${p.customer_phone}, ${p.username}, ${p.password_hash}, NOW())
     `
 
     // create session
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       WHERE claim_token = ${claim}
     `
 
-    const res = NextResponse.json({ ok: true, redirect: '/student/complete-registration' })
+    const res = NextResponse.json({ ok: true, redirect: '/student' })
     res.cookies.set('session_id', sessionId, { httpOnly: true, sameSite: 'lax', path: '/' })
     return res
   } catch (err: any) {

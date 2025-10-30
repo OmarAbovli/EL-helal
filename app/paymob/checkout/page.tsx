@@ -21,6 +21,8 @@ export default function PaymobCheckoutPage() {
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [parentPhone, setParentPhone] = useState("")
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
   const [selectedMonths, setSelectedMonths] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +44,7 @@ export default function PaymobCheckoutPage() {
       const res = await fetch('/api/purchases/create', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, phone, parent_phone: parentPhone, months: selectedMonths }),
+        body: JSON.stringify({ name, phone, parent_phone: parentPhone, months: selectedMonths, username, password }),
       })
       const j = await res.json()
       if (!res.ok) throw new Error(j?.error || JSON.stringify(j) || 'Create failed')
@@ -110,6 +112,14 @@ export default function PaymobCheckoutPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">موبايل ولي الأمر (اختياري)</label>
               <input className="w-full mt-1 p-3 border rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100" value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">اسم المستخدم</label>
+              <input className="w-full mt-1 p-3 border rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">كلمة المرور</label>
+              <input className="w-full mt-1 p-3 border rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">السعر للشهر الواحد</label>
