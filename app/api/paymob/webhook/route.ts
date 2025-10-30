@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     console.log('Paymob Webhook: Received body', JSON.stringify(body, null, 2));
 
     // Paymob sends different shapes, try to extract order id
-    const orderId = body?.order?.id ?? body?.order_id ?? body?.data?.id ?? null
+    const orderId = body?.obj?.order?.id ?? body?.order?.id ?? body?.order_id ?? body?.data?.id ?? null
     console.log('Paymob Webhook: Extracted orderId', orderId);
 
     if (!orderId) {
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     }
 
     // Heuristics to detect paid
-    const success = body?.success ?? body?.obj?.success ?? body?.is_paid ?? false
+    const success = body?.obj?.success ?? body?.success ?? body?.is_paid ?? false
     console.log('Paymob Webhook: Extracted success status', success);
 
     if (success) {
