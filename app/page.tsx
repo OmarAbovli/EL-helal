@@ -1,5 +1,33 @@
 import type React from "react"
+import type { Metadata } from "next"
 import SiteHeader from "@/components/site-header"
+
+export const metadata: Metadata = {
+  title: "منصة الهلال | لغة إنجليزية للثانوية العامة مع الأستاذ تامر هلال",
+  description: "منصة الهلال التعليمية لتعلم اللغة الإنجليزية لطلاب الصف الأول والثاني والثالث الثانوي في طنطا. اكتشف دروسًا تفاعلية، دورات فيديو شاملة، واختبارات ديناميكية. مع الأستاذ تامر هلال، اجعل تعلم الإنجليزية ممتعًا وفعالًا.",
+  keywords: ["منصة الهلال", "لغة إنجليزية", "ثانوية عامة", "الأستاذ تامر هلال", "طنطا", "دروس إنجليزية", "شروحات فيديو", "اختبارات إنجليزية", "تعليم أونلاين", "الصف الأول الثانوي", "الصف الثاني الثانوي", "الصف الثالث الثانوي", "تعلم الإنجليزية"],
+  openGraph: {
+    title: "منصة الهلال | لغة إنجليزية للثانوية العامة مع الأستاذ تامر هلال",
+    description: "منصة الهلال التعليمية لتعلم اللغة الإنجليزية لطلاب الصف الأول والثاني والثالث الثانوي في طنطا. اكتشف دروسًا تفاعلية، دورات فيديو شاملة، واختبارات ديناميكية. مع الأستاذ تامر هلال، اجعل تعلم الإنجليزية ممتعًا وفعالًا.",
+    url: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"),
+    images: [
+      {
+        url: new URL("/online-illustration-class.png", process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"),
+        width: 1200,
+        height: 630,
+        alt: "منصة الهلال التعليمية للغة الإنجليزية",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "منصة الهلال | لغة إنجليزية للثانوية العامة مع الأستاذ تامر هلال",
+    description: "منصة الهلال التعليمية لتعلم اللغة الإنجليزية لطلاب الصف الأول والثاني والثالث الثانوي في طنطا. اكتشف دروسًا تفاعلية، دورات فيديو شاملة، واختبارات ديناميكية. مع الأستاذ تامر هلال، اجعل تعلم الإنجليزية ممتعًا وفعالًا.",
+    images: [new URL("/online-illustration-class.png", process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/")],
+  },
+};
+
+
 import { Hero3DBook } from "@/components/hero-3d-book"
 import { Card, CardContent } from "@/components/ui/card"
 import { getFeaturedTeachers, getFeaturedVideos, getFreeVideos } from "@/server/public-queries"
@@ -13,6 +41,17 @@ export default async function HomePage() {
 
   return (
     <main className="text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "El-Helal",
+        "url": `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}`,
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/search?q={search_term_string}`,
+          "query-input": "required name=search_term_string"
+        }
+      })}} />
       <SiteHeader />
       <Hero3DBook primaryHref="/about-us" secondaryHref="/login" />
 

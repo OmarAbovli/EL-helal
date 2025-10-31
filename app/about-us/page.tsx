@@ -1,4 +1,56 @@
+import type { Metadata } from "next";
 import SiteHeader from "@/components/site-header"
+import { notFound } from "next/navigation"
+import { getTeacherProfile } from "@/server/public-queries"
+
+type Props = {
+  params: { id: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const data = await getTeacherProfile(params.id);
+  if (!data) {
+    return {
+      title: "المعلم غير موجود | منصة الهلال",
+      description: "ملف تعريف المعلم الذي تبحث عنه غير موجود في منصة الهلال.",
+    };
+  }
+  const { teacher } = data;
+
+  const teacherName = teacher.name || "معلم";
+  const teacherSubject = teacher.subject || "اللغة الإنجليزية";
+  const teacherBio = teacher.bio || `معلم ${teacherSubject} في طنطا`;
+
+  const title = `${teacherName} | ${teacherSubject} للثانوية العامة | منصة الهلال`;
+  const description = `تعرف على الأستاذ ${teacherName}، خبير ${teacherSubject} لطلاب الثانوية العامة في طنطا. اكتشف دوراته وشروحاته المميزة على منصة الهلال التعليمية.`;
+
+  return {
+    title,
+    description,
+    keywords: [`${teacherName}`, `${teacherSubject}`, "معلم إنجليزي", "ثانوية عامة", "طنطا", "منصة الهلال", "دروس إنجليزية"],
+    openGraph: {
+      title,
+      description,
+      url: new URL(`/about-us/${params.id}`, process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"),
+      images: [
+        {
+          url: new URL(teacher.avatar_url || "/placeholder-user.jpg", process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"),
+          width: 200,
+          height: 200,
+          alt: `صورة ملف تعريف ${teacherName}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      images: [new URL(teacher.avatar_url || "/placeholder-user.jpg", process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/")],
+    },
+  };
+}
+
+
 import { notFound } from "next/navigation"
 import { getTeacherProfile } from "@/server/public-queries"
 import VideoCardPro from "@/components/video-card-pro"
@@ -27,6 +79,24 @@ export default async function TeacherProfilePage({ params }: { params: { id: str
 
   return (
     <main>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": teacher.name,
+        "url": `${process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"}/about-us/${teacher.id}`,
+        "image": `${process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"}${teacher.avatar_url || "/placeholder-user.jpg"}`,
+        "description": teacher.bio || `معلم اللغة الإنجليزية لطلاب الثانوية العامة في طنطا.`,
+        "alumniOf": "منصة الهلال",
+        "hasOccupation": {
+          "@type": "Occupation",
+          "name": teacher.subject || "معلم لغة إنجليزية",
+          "description": `متخصص في تدريس اللغة الإنجليزية لطلاب الصف الأول والثاني والثالث الثانوي.`
+        },
+        "worksFor": {
+          "@type": "EducationalOrganization",
+          "name": "منصة الهلال"
+        }
+      })}} />
       <SiteHeader />
       <section
         className="w-full bg-background"

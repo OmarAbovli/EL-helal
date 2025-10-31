@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link"
 import SiteHeader from "@/components/site-header"
 import SecureVideoPlayer from "@/components/secure-video-player"
@@ -6,6 +7,57 @@ import {
   getResourcesForVideo,
   getQuizzesForVideo,
 } from "@/server/video-access"
+
+type Props = {
+  params: { id: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const videoId = params.id;
+  const video = await getVideoById(videoId);
+
+  if (!video) {
+    return {
+      title: "الفيديو غير موجود | منصة الهلال",
+      description: "الفيديو الذي تبحث عنه غير موجود في منصة الهلال.",
+    };
+  }
+
+  const videoTitle = video.title || "درس فيديو";
+  const teacherName = video.teacher_name || "الأستاذ تامر هلال";
+  const videoCategory = video.category || "اللغة الإنجليزية";
+
+  const title = `${videoTitle} | ${teacherName} | ${videoCategory} للثانوية العامة | منصة الهلال`;
+  const description = video.description || `شاهد ${videoTitle} وتعلم ${videoCategory} مع ${teacherName} لطلاب الثانوية العامة على منصة الهلال التعليمية.`;
+
+  return {
+    title,
+    description,
+    keywords: [`${videoTitle}`, `${videoCategory}`, `${teacherName}`, "درس فيديو إنجليزي", "فيديو تعليمي", "منصة الهلال", "ثانوية عامة", "طنطا"],
+    openGraph: {
+      title,
+      description,
+      url: new URL(`/watch/${videoId}`, process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"),
+      images: [
+        {
+          url: new URL(video.thumbnail_url || "/video-thumbnail.png", process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"),
+          width: 1280,
+          height: 720,
+          alt: `صورة مصغرة لـ ${videoTitle}`,
+        },
+      ],
+      type: "video.other",
+    },
+    twitter: {
+      card: "player",
+      title,
+      description,
+      images: [new URL(video.thumbnail_url || "/video-thumbnail.png", process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/")],
+    },
+  };
+}
+
+
 import { checkVideoAccess } from "@/server/student-queries"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -73,6 +125,37 @@ export default async function WatchPage({ params }: Props) {
 
   return (
     <main>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": video.title,
+        "description": video.description,
+        "uploadDate": video.created_at ? new Date(video.created_at).toISOString() : new Date().toISOString(),
+        "thumbnailUrl": `${process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"}${video.thumbnail_url || "/video-thumbnail.png"}`,
+        "contentUrl": `${process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"}/watch/${video.id}`,
+        "embedUrl": `${process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"}/embed/video/${video.id}`,
+        "publisher": {
+          "@type": "Organization",
+          "name": "منصة الهلال",
+          "logo": {
+            "@type": "ImageObject",
+            "url": `${process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"}/placeholder-logo.svg`,
+            "width": 600,
+            "height": 60
+          }
+        },
+        "duration": "PT0H15M00S", // Placeholder, ideally fetch from video metadata
+        "regionsAllowed": "EG", // Explicitly setting Egypt
+        "interactionStatistic": {
+          "@type": "InteractionCounter",
+          "interactionType": "https://schema.org/WatchAction",
+          "userInteractionCount": 0 // Placeholder, could be from video views table
+        },
+        "author": {
+            "@type": "Person",
+            "name": video.teacher_name || "الأستاذ تامر هلال"
+        }
+      })}} />
       <SiteHeader />
       <div className="mx-auto grid max-w-5xl gap-6 p-4 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">

@@ -24,7 +24,7 @@ export function Hero3DBook({
           className="hidden h-full w-full dark:block"
           style={{
             background:
-              "radial-gradient(1200px 500px at 20% 10%, rgba(16,185,129,0.10), transparent 60%), radial-gradient(1200px 500px at 80% 20%, rgba(45,212,191,0.10), transparent 60%), linear-gradient(180deg, #020617 0%, #0b1220 100%)",
+              "radial-gradient(1200px 500px at 20% 10%, rgba(2,6,23,0.10), transparent 60%), radial-gradient(1200px 500px at 80% 20%, rgba(11,18,32,0.10), transparent 60%), linear-gradient(180deg, #020617 0%, #0b1220 100%)",
           }}
         />
       </div>

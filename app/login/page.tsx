@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import SiteHeader from "@/components/site-header"
+
+export const metadata: Metadata = {
+  title: "Login to El-Helal",
+  description: "Access your El-Helal account to continue your interactive learning journey. Log in as a student, teacher, or administrator.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+
 import Link from "next/link"
 import LoginForm from "@/components/login-form"
 

@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: "Access Denied | El-Helal",
+  description: "You do not have the necessary permissions to access this page on El-Helal. Please log in with an authorized account or contact support.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+
 
 export default function AccessDeniedPage() {
   return (

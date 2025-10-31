@@ -12,10 +12,52 @@ import { FloatingChat } from "@/components/messaging/floating-chat"
 import { cookies } from "next/headers"
 
 export const metadata: Metadata = {
-  title: "El-helal",
-  description: "Created with v0",
-  generator: "v0.dev",
-}
+  title: {
+    default: "منصة الهلال | لغة إنجليزية للثانوية العامة مع الأستاذ تامر هلال",
+    template: "%s | منصة الهلال",
+  },
+  description: "منصة الهلال التعليمية لتعلم اللغة الإنجليزية لطلاب الصف الأول والثاني والثالث الثانوي في طنطا. دروس تفاعلية، شروحات فيديو شاملة، اختبارات دورية، وإشراف مباشر من الأستاذ تامر هلال.",
+  generator: "منصة الهلال التعليمية",
+  applicationName: "منصة الهلال",
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
+  keywords: ["منصة الهلال", "لغة إنجليزية", "ثانوية عامة", "الأستاذ تامر هلال", "طنطا", "دروس إنجليزية", "شروحات فيديو", "اختبارات إنجليزية", "تعليم أونلاين", "الصف الأول الثانوي", "الصف الثاني الثانوي", "الصف الثالث الثانوي"],
+  authors: [{ name: "الأستاذ تامر هلال" }],
+  creator: "الأستاذ تامر هلال",
+  publisher: "منصة الهلال التعليمية",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: "منصة الهلال | لغة إنجليزية للثانوية العامة مع الأستاذ تامر هلال",
+    description: "منصة الهلال التعليمية لتعلم اللغة الإنجليزية لطلاب الصف الأول والثاني والثالث الثانوي في طنطا. دروس تفاعلية، شروحات فيديو شاملة، اختبارات دورية، وإشراف مباشر من الأستاذ تامر هلال.",
+    url: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"),
+    siteName: "منصة الهلال",
+    images: [
+      {
+        url: new URL("/online-illustration-class.png", process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/"),
+        width: 1200,
+        height: 630,
+        alt: "منصة الهلال التعليمية للغة الإنجليزية",
+      },
+    ],
+    locale: "ar_AR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "منصة الهلال | لغة إنجليزية للثانوية العامة مع الأستاذ تامر هلال",
+    description: "منصة الهلال التعليمية لتعلم اللغة الإنجليزية لطلاب الصف الأول والثاني والثالث الثانوي في طنطا. دروس تفاعلية، شروحات فيديو شاملة، اختبارات دورية، وإشراف مباشر من الأستاذ تامر هلال.",
+    creator: "@TamerHelalEdu", // Placeholder, if a Twitter handle exists
+    images: [new URL("/online-illustration-class.png", process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app/")],
+  },
+};
+
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
