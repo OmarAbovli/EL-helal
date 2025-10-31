@@ -42,7 +42,7 @@ export function Hero3DBook({
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <a href={primaryHref}>
-              <Button className="bg-emerald-600 hover:bg-emerald-700">Explore Teachers</Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700">About Us</Button>
             </a>
             <a href={secondaryHref}>
               <Button

@@ -244,3 +244,138 @@ export async function deleteQuiz(quizId: string) {
 
     return { success: true };
 }
+
+export async function getQuizResults(quizId: string) {
+  const cookieStore = cookies();
+  const sessionCookie = await cookieStore.get("session_id")?.value; // Await cookies().get()
+  const user = await getCurrentUser(sessionCookie);
+  if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
+    throw new Error('Unauthorized');
+  }
+
+  // Fetch quiz details and submissions
+  const quiz = await sql`
+    SELECT
+      q.id,
+      q.title,
+      q.video_id,
+      v.title as video_title,
+      q.created_at
+    FROM quizzes q
+    LEFT JOIN videos v ON q.video_id = v.id
+    WHERE q.id = ${quizId}
+  `;
+
+  if (!quiz || quiz.length === 0) {
+    return null; // Quiz not found
+  }
+
+  // Fetch all submissions for this quiz
+  const submissions = await sql`
+    SELECT
+      qs.id as submission_id,
+      qs.student_id,
+      u.name as student_name,
+      qs.score,
+      qs.submitted_at
+    FROM quiz_submissions qs
+    JOIN users u ON qs.student_id = u.id
+    WHERE qs.quiz_id = ${quizId}
+    ORDER BY qs.submitted_at DESC;
+  `;
+
+  // For each submission, fetch the answers
+  const resultsWithAnswers = await Promise.all(submissions.map(async (submission) => {
+    const answers = await sql`
+      SELECT
+        qa.question_id,
+        qa.selected_option_index,
+        qa.is_correct,
+        q.question_text,
+        q.options as question_options
+      FROM student_answers qa
+      JOIN questions q ON qa.question_id = q.id
+      WHERE qa.submission_id = ${submission.submission_id}
+      ORDER BY q.order ASC;
+    `;
+    return {
+      ...submission,
+      answers: answers.map(answer => ({
+        ...answer,
+        question_options: typeof answer.question_options === 'string' ? JSON.parse(answer.question_options) : answer.question_options
+      }))
+    };
+  }));
+
+  return {
+    quiz: quiz[0],
+    submissions: resultsWithAnswers,
+  };
+}
+
+export async function getQuizSubmissionDetails(quizId: string, submissionId: string) {
+  const cookieStore = cookies();
+  const sessionCookie = await cookieStore.get("session_id")?.value;
+  const user = await getCurrentUser(sessionCookie);
+  if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
+    throw new Error('Unauthorized');
+  }
+
+  // Fetch quiz details
+  const [quiz] = await sql`
+    SELECT id, title FROM quizzes WHERE id = ${quizId};
+  `;
+  if (!quiz) {
+    return null;
+  }
+
+  // Fetch submission details
+  const [submission] = await sql`
+    SELECT id, student_id, score, submitted_at FROM quiz_submissions WHERE id = ${submissionId} AND quiz_id = ${quizId};
+  `;
+  if (!submission) {
+    return null;
+  }
+
+  // Fetch student details
+  const [student] = await sql`
+    SELECT id, name FROM users WHERE id = ${submission.student_id};
+  `;
+  if (!student) {
+    return null;
+  }
+
+  // Fetch all questions for the quiz
+  const questions = await sql`
+    SELECT id, question_text, "order", options, feedback FROM questions WHERE quiz_id = ${quizId} ORDER BY "order" ASC;
+  `;
+
+  // Fetch student's answers for this submission
+  const studentAnswers = await sql`
+    SELECT question_id, selected_option_index, is_correct FROM student_answers WHERE submission_id = ${submissionId};
+  `;
+
+  const studentAnswersMap = new Map(studentAnswers.map(sa => [sa.question_id, sa]));
+
+  const questionsWithAnswers = questions.map(q => {
+    const studentAnswer = studentAnswersMap.get(q.id) || {
+      question_id: q.id,
+      selected_option_index: -1, // Indicate no answer
+      is_correct: false,
+    };
+    return {
+      question: {
+        ...q,
+        options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+      },
+      studentAnswer,
+    };
+  });
+
+  return {
+    quiz,
+    submission,
+    student,
+    questionsWithAnswers,
+  };
+}

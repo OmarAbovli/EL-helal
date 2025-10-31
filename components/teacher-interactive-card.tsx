@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 export default function TeacherInteractiveCard() {
   const [isHovered, setIsHovered] = useState(false);
@@ -22,10 +23,12 @@ export default function TeacherInteractiveCard() {
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => setIsHovered(!isHovered)}
       >
-        <img 
+        <Image 
           src={isHovered ? '/teacher-portrait.png' : '/teacher-avatar.png'}
           alt="Tamer Helal"
-          className="absolute w-full h-full object-cover transition-opacity duration-500"
+          layout="fill"
+          objectFit="cover"
+          className="transition-opacity duration-500"
         />
       </div>
       <style jsx>{`

@@ -17,10 +17,12 @@ export default function LoginPage() {
             </p>
             <div className="mt-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-                <Link href="/about-us" className="text-sm underline">
-                  {"View The Teacher Profile - Get Your Code."}
-                </Link>
-
+                                  <Link
+                    href="https://wa.me/201503860035"
+                    className="text-sm underline"
+                  >
+                                    لو عندك اي مشاكل في التسجيل او الدفع اضغط هنا لتتواصل معنا ❤️
+                                  </Link>
                 <Link
                   href="/paymob/checkout"
                   className="mt-3 inline-block rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 sm:mt-0"

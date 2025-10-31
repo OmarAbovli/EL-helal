@@ -75,6 +75,9 @@ export function QuizListClient({ quizzes }: { quizzes: Quiz[] }) {
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/teacher/quizzes/${quiz.id}/edit`}>تعديل</Link>
                 </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/teacher/quizzes/${quiz.id}/results`}>عرض النتائج</Link>
+                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm" disabled={isDeleting}>

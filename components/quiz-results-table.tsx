@@ -1,4 +1,8 @@
 
+'use client'
+
+import Link from 'next/link'
+
 type QuizResult = {
   submission_id: string
   score: number
@@ -29,12 +33,16 @@ export function QuizResultsTable({ results }: { results: QuizResult[] }) {
         <tbody>
           {results.map((r) => (
             <tr key={r.submission_id} className="border-t">
-              <td className="py-2 pr-3">{r.student_name}</td>
+              <td className="py-2 pr-3">
+                <Link href={`/teacher/quizzes/${r.quiz_id}/results/${r.submission_id}`} className="text-blue-600 hover:underline">
+                  {r.student_name}
+                </Link>
+              </td>
               <td className="py-2 pr-3">{r.quiz_title}</td>
               <td className="py-2 pr-3">{r.video_title}</td>
               <td className="py-2 pr-3">{r.month}</td>
               <td className="py-2 pr-3">{r.score}%</td>
-              <td className="py-2 pr-3">{new Date(r.submitted_at).toLocaleDateString()}</td>
+              <td className="py-2 pr-3">{(new Date(r.submitted_at)).toLocaleDateString()}</td>
             </tr>
           ))}
         </tbody>
