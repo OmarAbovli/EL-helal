@@ -50,8 +50,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-
-import { notFound } from "next/navigation"
 import { getTeacherProfile } from "@/server/public-queries"
 import VideoCardPro from "@/components/video-card-pro"
 import { Button } from "@/components/ui/button"
