@@ -6,12 +6,13 @@ export async function POST(req: Request) {
     const body = await req.json()
     console.log('Paymob Webhook: Received body', JSON.stringify(body, null, 2));
 
-    // Paymob sends different shapes, try to extract order id
+    // Paymob sends different shapes, try to extract order id and our claim token (merchant_order_id)
     const orderId = body?.obj?.order?.id ?? body?.order?.id ?? body?.order_id ?? body?.data?.id ?? null
-    console.log('Paymob Webhook: Extracted orderId', orderId);
+    const claimToken = body?.obj?.order?.merchant_order_id ?? body?.order?.merchant_order_id ?? null
+    console.log('Paymob Webhook: Extracted orderId', orderId, 'and claimToken', claimToken);
 
-    if (!orderId) {
-      console.error('Paymob Webhook: Missing order_id in payload');
+    if (!orderId && !claimToken) {
+      console.error('Paymob Webhook: Missing both order_id and merchant_order_id in payload');
       return NextResponse.json({ ok: false, error: 'missing_order_id' }, { status: 400 })
     }
 
@@ -21,11 +22,20 @@ export async function POST(req: Request) {
 
     if (success) {
       console.log(`Paymob Webhook: Payment successful for orderId ${orderId}. Updating purchase status.`);
-      await sql`
-        UPDATE purchases SET status = 'paid', paid_at = NOW()
-        WHERE paymob_order_id = ${String(orderId)} OR paymob_order_id = ${String(orderId)}
-      `
-      console.log(`Paymob Webhook: Purchase status updated for orderId ${orderId}.`);
+      if (claimToken) {
+        await sql`
+          UPDATE purchases SET status = 'paid', paid_at = NOW()
+          WHERE claim_token = ${String(claimToken)}
+        `
+        console.log(`Paymob Webhook: Purchase status updated for claimToken ${claimToken}.`);
+      } else if (orderId) {
+        // Fallback to old method if claim token is not present
+        await sql`
+          UPDATE purchases SET status = 'paid', paid_at = NOW()
+          WHERE paymob_order_id = ${String(orderId)}
+        `
+        console.log(`Paymob Webhook: Purchase status updated for orderId ${orderId} using fallback.`);
+      }
     } else {
       console.log(`Paymob Webhook: Payment not successful for orderId ${orderId}. Status: ${success}`);
     }

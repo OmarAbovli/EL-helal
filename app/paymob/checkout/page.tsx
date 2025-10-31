@@ -73,43 +73,11 @@ export default function PaymobCheckoutPage() {
       const j = await res.json()
       if (!res.ok) throw new Error(j?.error || JSON.stringify(j) || 'Create failed')
 
-      if (j.iframeUrl && j.claim) {
-        // Open Paymob iframe in a new window to avoid iframe sandbox issues
-        window.open(j.iframeUrl, '_blank', 'noopener')
-
-        // Poll status by claim until paid, then finalize locally
-        const claim = j.claim
-        const start = Date.now()
-        const timeoutMs = 1000 * 60 * 10 // 10 minutes
-
-        while (Date.now() - start < timeoutMs) {
-          // eslint-disable-next-line no-await-in-loop
-          const st = await fetch(`/api/purchases/status?claim=${encodeURIComponent(claim)}`)
-          // eslint-disable-next-line no-await-in-loop
-          const sj = await st.json()
-          if (sj?.ok && sj.status === 'paid') {
-            // finalize: call complete endpoint which will create session and set cookie
-            // eslint-disable-next-line no-await-in-loop
-            const completeRes = await fetch('/api/purchases/complete', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ claim }),
-            })
-            // eslint-disable-next-line no-await-in-loop
-            const completeJson = await completeRes.json()
-            if (completeRes.ok && completeJson?.redirect) {
-              window.location.href = completeJson.redirect
-              return
-            }
-            break
-          }
-          // wait 3 seconds
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise((r) => setTimeout(r, 3000))
-        }
-        setError('Timed out waiting for payment confirmation. If you paid, contact support.')
+      if (j.iframeUrl) {
+        // Redirect the user to the Paymob payment page
+        window.location.href = j.iframeUrl
       } else {
-        throw new Error('No iframe URL or claim returned')
+        throw new Error('No iframe URL returned from server')
       }
     } catch (err: any) {
       setError(err?.message || String(err))

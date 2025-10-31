@@ -12,11 +12,18 @@ async function createPaymobAuthToken(apiKey: string) {
   return res.json()
 }
 
-async function createPaymobOrder(authToken: string, amount_cents: number) {
+async function createPaymobOrder(authToken: string, amount_cents: number, merchant_order_id: string) {
   const res = await fetch('https://accept.paymob.com/api/ecommerce/orders', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ auth_token: authToken, delivery_needed: false, amount_cents, currency: 'EGP', items: [] }),
+    body: JSON.stringify({
+      auth_token: authToken,
+      delivery_needed: false,
+      amount_cents,
+      currency: 'EGP',
+      items: [],
+      merchant_order_id,
+    }),
   })
   return res.json()
 }
@@ -49,10 +56,10 @@ export async function POST(req: Request) {
     const grade = Number(body.grade ?? 0)
     const teacher_id = String(body.teacher_id ?? '').trim()
     const student_type = String(body.student_type ?? 'center').trim()
-  // months may be an array of month ids (e.g. ['jan','oct']) or a number fallback
-  const monthsInput = body.months
-  const monthsArray: string[] = Array.isArray(monthsInput) ? monthsInput.map(String) : typeof monthsInput === 'string' ? [monthsInput] : []
-  const monthsCount = monthsArray.length || Number(body.months_count ?? 0) || 1
+    // months may be an array of month ids (e.g. ['jan','oct']) or a number fallback
+    const monthsInput = body.months
+    const monthsArray: string[] = Array.isArray(monthsInput) ? monthsInput.map(String) : typeof monthsInput === 'string' ? [monthsInput] : []
+    const monthsCount = monthsArray.length || Number(body.months_count ?? 0) || 1
 
     if (!name || !phone || !monthsCount || monthsCount < 1 || !username || !password || !grade || !teacher_id) {
       return NextResponse.json({ ok: false, error: 'missing_fields' }, { status: 400 })
@@ -61,7 +68,7 @@ export async function POST(req: Request) {
     const passwordHash = await bcrypt.hash(password, 10)
 
     const PAYMOB_API_KEY = process.env.PAYMOB_API_KEY
-        const PAYMOB_INTEGRATION_ID = process.env.PAYMOB_INTEGRATION_ID ?? process.env.paymob_integration_id_card
+    const PAYMOB_INTEGRATION_ID = process.env.PAYMOB_INTEGRATION_ID ?? process.env.paymob_integration_id_card
     const PAYMOB_IFRAME_ID = process.env.PAYMOB_IFRAME_ID
     const PRICE_PER_MONTH_EGP = Number(process.env.PRICE_PER_MONTH_EGP ?? 50)
 
@@ -69,17 +76,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'paymob_env_missing' }, { status: 500 })
     }
 
-  const amount_cents = Math.round(monthsCount * PRICE_PER_MONTH_EGP * 100)
-
-  const auth = await createPaymobAuthToken(PAYMOB_API_KEY)
-  const authToken = auth?.token
-  if (!authToken) throw new Error('paymob auth failed: ' + JSON.stringify(auth))
-
-  const order = await createPaymobOrder(authToken, amount_cents)
-  const orderId = order?.id
-  if (!orderId) throw new Error('paymob order failed: ' + JSON.stringify(order))
+    const amount_cents = Math.round(monthsCount * PRICE_PER_MONTH_EGP * 100)
 
     const claim = 'c_' + randomUUID()
+
+    const auth = await createPaymobAuthToken(PAYMOB_API_KEY)
+    const authToken = auth?.token
+    if (!authToken) throw new Error('paymob auth failed: ' + JSON.stringify(auth))
+
+    const order = await createPaymobOrder(authToken, amount_cents, claim)
+    const orderId = order?.id
+    if (!orderId) throw new Error('paymob order failed: ' + JSON.stringify(order))
 
     const billingData = {
       street: String(body.street ?? 'N/A'),

@@ -10,9 +10,10 @@ export default function PaymobCompletePage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const claim = params.get('claim')
+    // The claim token is passed back from paymob as merchant_order_id
+    const claim = params.get('merchant_order_id') || params.get('claim')
     if (!claim) {
-      setError('Missing claim token')
+      setError('Missing claim token (merchant_order_id)')
       setLoading(false)
       return
     }
