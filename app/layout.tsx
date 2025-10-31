@@ -67,6 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" suppressHydrationWarning className="h-full" data-three-bg="on">
       <head>
+        <meta name="google-site-verification" content="KiONYWDJQJlNbvmI2tvFRFnEMUuh6P6nQ4zBHynx9Nw" />
         <style>{`
 /* Fonts */
 html {

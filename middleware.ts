@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow access to public pages
-  if (pathname === '/login' || pathname === '/' || pathname.startsWith('/_next') || pathname.startsWith('/api')) {
+  if (pathname === '/login' || pathname === '/' || pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.startsWith('/paymob')) {
     // If user is logged in and tries to access /login, redirect to their dashboard
     if (user && pathname === '/login') {
       if (user.role === 'admin') return NextResponse.redirect(new URL('/admin', request.url));
@@ -53,6 +53,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg)$).*)', // Apply to all paths except API routes, static files, images, and favicon
+    '/admin/:path*',
+    '/teacher/:path*',
+    '/student/:path*',
   ],
 };
