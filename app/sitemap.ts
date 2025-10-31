@@ -43,10 +43,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/quiz`, // Assuming there's a public quiz listing page
+      url: `${baseUrl}/quiz`, // Assuming there\'s a public quiz listing page
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/photos`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/demo`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/qr-login`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
     },
     // Add other static public pages here
   ];
@@ -75,7 +93,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // Assuming 'videos' table has an 'updated_at' column
     videos = await sql`
-      SELECT id, updated_at FROM videos WHERE is_free = TRUE OR is_public = TRUE -- Adjust condition based on what videos are publicly accessible
+      SELECT id, updated_at FROM videos WHERE is_free = TRUE OR is_public = TRUE -- IMPORTANT: Adjust this condition based on what videos are truly publicly accessible for SEO.
     ` as Video[];
   } catch (error) {
     console.error("Failed to fetch videos for sitemap:", error);
