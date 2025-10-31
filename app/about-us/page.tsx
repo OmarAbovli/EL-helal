@@ -49,8 +49,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
   };
 }
-
-import { getTeacherProfile } from "@/server/public-queries"
 import VideoCardPro from "@/components/video-card-pro"
 import { Button } from "@/components/ui/button"
 import { getTeacherPhotos } from "@/server/photo-queries"
