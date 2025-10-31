@@ -5,18 +5,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 
 const ALL_MONTHS = [
-  { id: 'jan', label: 'يناير' },
-  { id: 'feb', label: 'فبراير' },
-  { id: 'mar', label: 'مارس' },
-  { id: 'apr', label: 'أبريل' },
-  { id: 'may', label: 'مايو' },
-  { id: 'jun', label: 'يونيو' },
-  { id: 'jul', label: 'يوليو' },
-  { id: 'aug', label: 'أغسطس' },
-  { id: 'sep', label: 'سبتمبر' },
-  { id: 'oct', label: 'أكتوبر' },
-  { id: 'nov', label: 'نوفمبر' },
-  { id: 'dec', label: 'ديسمبر' },
+  { id: 1, label: 'يناير' },
+  { id: 2, label: 'فبراير' },
+  { id: 3, label: 'مارس' },
+  { id: 4, label: 'أبريل' },
+  { id: 5, label: 'مايو' },
+  { id: 6, label: 'يونيو' },
+  { id: 7, label: 'يوليو' },
+  { id: 8, label: 'أغسطس' },
+  { id: 9, label: 'سبتمبر' },
+  { id: 10, label: 'أكتوبر' },
+  { id: 11, label: 'نوفمبر' },
+  { id: 12, label: 'ديسمبر' },
 ]
 
 export default function PaymobCheckoutPage() {
@@ -28,7 +28,7 @@ export default function PaymobCheckoutPage() {
   const [grade, setGrade] = useState<number | null>(null)
   const [teachers, setTeachers] = useState<any[]>([])
   const [teacherId, setTeacherId] = useState<string | null>(null)
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([])
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -51,7 +51,7 @@ export default function PaymobCheckoutPage() {
 
   const total = useMemo(() => selectedMonths.length * PRICE_PER_MONTH, [selectedMonths.length, PRICE_PER_MONTH])
 
-  function toggleMonth(id: string) {
+  function toggleMonth(id: number) {
     setSelectedMonths((prev) => (prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]))
   }
 

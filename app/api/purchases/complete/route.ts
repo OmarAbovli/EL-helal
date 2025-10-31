@@ -26,9 +26,15 @@ export async function POST(req: Request) {
       VALUES (${subId}, ${userId}, ${p.teacher_id}, 'active')
       ON CONFLICT DO NOTHING;
     `
+
+    // p.months_list is a JSON string, so we need to parse it into an array
+    const allowedMonthsArray = JSON.parse(p.months_list || '[]')
+    // Manually format the array into a PostgreSQL literal string, e.g., '{1,2,3}'
+    const allowedMonthsPgLiteral = `{${allowedMonthsArray.join(',')}}`
+
     await sql`
       INSERT INTO student_month_access (student_id, teacher_id, allowed_months)
-      VALUES (${userId}, ${p.teacher_id}, ${p.months_list})
+      VALUES (${userId}, ${p.teacher_id}, ${allowedMonthsPgLiteral})
       ON CONFLICT (student_id, teacher_id) DO UPDATE SET allowed_months = EXCLUDED.allowed_months;
     `
 

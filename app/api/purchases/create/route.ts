@@ -55,12 +55,12 @@ export async function POST(req: Request) {
     const password = String(body.password ?? '').trim()
     const grade = Number(body.grade ?? 0)
     const teacher_id = String(body.teacher_id ?? '').trim()
-    const student_type = String(body.student_type ?? 'center').trim()
-    // months may be an array of month ids (e.g. ['jan','oct']) or a number fallback
-    const monthsInput = body.months
-    const monthsArray: string[] = Array.isArray(monthsInput) ? monthsInput.map(String) : typeof monthsInput === 'string' ? [monthsInput] : []
-    const monthsCount = monthsArray.length || Number(body.months_count ?? 0) || 1
-
+        const student_type = String(body.student_type ?? 'center').trim()
+        const monthsInput = body.months
+        const monthsArray: number[] = Array.isArray(monthsInput)
+          ? monthsInput.map(Number).filter((n) => !isNaN(n) && n > 0 && n < 13)
+          : []
+        const monthsCount = monthsArray.length || Number(body.months_count ?? 0) || 1
     if (!name || !phone || !monthsCount || monthsCount < 1 || !username || !password || !grade || !teacher_id) {
       return NextResponse.json({ ok: false, error: 'missing_fields' }, { status: 400 })
     }
