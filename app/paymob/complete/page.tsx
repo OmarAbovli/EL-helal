@@ -26,8 +26,12 @@ export default function PaymobCompletePage() {
         })
         const j = await res.json()
         if (!res.ok) throw new Error(j?.error || 'Complete failed')
-        // Redirect to complete registration page
-        router.push('/student/complete-registration')
+        if (j.redirect) {
+          router.push(j.redirect)
+        } else {
+          // Fallback or show success message
+          router.push('/student')
+        }
       } catch (err: any) {
         setError(err?.message || String(err))
       } finally {

@@ -46,12 +46,15 @@ export async function POST(req: Request) {
     const parent_phone = String(body.parent_phone ?? '').trim() || null
     const username = String(body.username ?? '').trim()
     const password = String(body.password ?? '').trim()
+    const grade = Number(body.grade ?? 0)
+    const teacher_id = String(body.teacher_id ?? '').trim()
+    const student_type = String(body.student_type ?? 'center').trim()
   // months may be an array of month ids (e.g. ['jan','oct']) or a number fallback
   const monthsInput = body.months
   const monthsArray: string[] = Array.isArray(monthsInput) ? monthsInput.map(String) : typeof monthsInput === 'string' ? [monthsInput] : []
   const monthsCount = monthsArray.length || Number(body.months_count ?? 0) || 1
 
-    if (!name || !phone || !monthsCount || monthsCount < 1 || !username || !password) {
+    if (!name || !phone || !monthsCount || monthsCount < 1 || !username || !password || !grade || !teacher_id) {
       return NextResponse.json({ ok: false, error: 'missing_fields' }, { status: 400 })
     }
 
@@ -102,12 +105,13 @@ export async function POST(req: Request) {
 
     // store pending purchase with claim token
     await sql`
-      INSERT INTO purchases (paymob_order_id, payment_token, claim_token, amount_cents, currency, months_count, months_list, customer_name, customer_phone, parent_phone, status, created_at, username, password_hash)
-      VALUES (${String(orderId)}, ${payment_token}, ${claim}, ${amount_cents}, 'EGP', ${monthsCount}, ${JSON.stringify(monthsArray)}, ${name}, ${phone}, ${parent_phone}, 'pending', NOW(), ${username}, ${passwordHash})
+      INSERT INTO purchases (paymob_order_id, payment_token, claim_token, amount_cents, currency, months_count, months_list, customer_name, customer_phone, parent_phone, status, created_at, username, password_hash, grade, teacher_id, student_type)
+      VALUES (${String(orderId)}, ${payment_token}, ${claim}, ${amount_cents}, 'EGP', ${monthsCount}, ${JSON.stringify(monthsArray)}, ${name}, ${phone}, ${parent_phone}, 'pending', NOW(), ${username}, ${passwordHash}, ${grade}, ${teacher_id}, ${student_type})
     `
 
     return NextResponse.json({ ok: true, iframeUrl, payment_token, claim })
   } catch (err: any) {
+    console.error("[CREATE PURCHASE ERROR]", err);
     return NextResponse.json({ ok: false, error: err?.message || String(err) }, { status: 500 })
   }
 }

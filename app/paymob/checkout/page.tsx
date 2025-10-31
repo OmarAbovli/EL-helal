@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 
 const ALL_MONTHS = [
   { id: 'jan', label: 'يناير' },
@@ -23,9 +25,27 @@ export default function PaymobCheckoutPage() {
   const [parentPhone, setParentPhone] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [grade, setGrade] = useState<number | null>(null)
+  const [teachers, setTeachers] = useState<any[]>([])
+  const [teacherId, setTeacherId] = useState<string | null>(null)
   const [selectedMonths, setSelectedMonths] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/teachers')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data || data.length === 0) {
+          setError("No teachers found. Please contact support.")
+          return
+        }
+        setTeachers(data)
+        if (data.length === 1) {
+          setTeacherId(data[0].id)
+        }
+      })
+  }, [])
 
   const PRICE_PER_MONTH = Number(process.env.NEXT_PUBLIC_PRICE_PER_MONTH_EGP ?? process.env.PRICE_PER_MONTH_EGP ?? 50)
 
@@ -38,13 +58,17 @@ export default function PaymobCheckoutPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    if (!teacherId) {
+      setError("Please select a teacher.")
+      return
+    }
     if (!selectedMonths.length) return setError('الرجاء اختيار شهر واحد على الأقل')
     setLoading(true)
     try {
       const res = await fetch('/api/purchases/create', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, phone, parent_phone: parentPhone, months: selectedMonths, username, password }),
+        body: JSON.stringify({ name, phone, parent_phone: parentPhone, months: selectedMonths, username, password, grade, teacher_id: teacherId, student_type: 'online' }),
       })
       const j = await res.json()
       if (!res.ok) throw new Error(j?.error || JSON.stringify(j) || 'Create failed')
@@ -122,6 +146,36 @@ export default function PaymobCheckoutPage() {
               <input className="w-full mt-1 p-3 border rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             <div>
+              <Label>Grade</Label>
+              <Select value={grade?.toString() ?? ""} onValueChange={(v) => setGrade(Number.parseInt(v))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">First year</SelectItem>
+                  <SelectItem value="2">Second year</SelectItem>
+                  <SelectItem value="3">Third year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {teachers.length > 1 && (
+              <div>
+                <Label>Teacher</Label>
+                <Select value={teacherId?.toString() ?? ""} onValueChange={(v) => setTeacherId(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select teacher" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teachers.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">السعر للشهر الواحد</label>
               <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{PRICE_PER_MONTH} EGP</div>
             </div>
@@ -149,7 +203,7 @@ export default function PaymobCheckoutPage() {
               <div className="text-2xl font-bold">{total} EGP</div>
             </div>
             <div>
-              <button className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow dark:bg-blue-500 dark:hover:bg-blue-600" disabled={loading}>{loading ? 'جاري الإعداد...' : 'ادفع الآن'}</button>
+              <button className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow dark:bg-blue-500 dark:hover:bg-blue-600" disabled={loading || !teacherId}>{loading ? 'جاري الإعداد...' : 'ادفع الآن'}</button>
             </div>
           </div>
 

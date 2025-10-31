@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const claim = String(body.claim ?? '').trim()
     if (!claim) return NextResponse.json({ ok: false, error: 'missing_claim' }, { status: 400 })
 
-    const rows = (await sql`SELECT id, customer_name, customer_phone, months, status, username, password_hash FROM purchases WHERE claim_token = ${claim} LIMIT 1`) as any[]
+    const rows = (await sql`SELECT id, customer_name, customer_phone, months_list, status, username, password_hash, grade, teacher_id, student_type FROM purchases WHERE claim_token = ${claim} LIMIT 1`) as any[]
     const p = rows[0]
     if (!p) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
     if (p.status !== 'paid') return NextResponse.json({ ok: false, error: 'not_paid' }, { status: 400 })
@@ -16,8 +16,20 @@ export async function POST(req: Request) {
     // create student user
     const userId = 's_' + randomUUID()
     await sql`
-      INSERT INTO users (id, role, name, phone, username, password_hash, created_at)
-      VALUES (${userId}, 'student', ${p.customer_name}, ${p.customer_phone}, ${p.username}, ${p.password_hash}, NOW())
+      INSERT INTO users (id, role, name, phone, username, password_hash, grade, classification, created_at)
+      VALUES (${userId}, 'student', ${p.customer_name}, ${p.customer_phone}, ${p.username}, ${p.password_hash}, ${p.grade}, ${p.student_type}, NOW())
+    `
+
+    const subId = "sub_" + randomUUID()
+    await sql`
+      INSERT INTO teacher_subscriptions (id, student_id, teacher_id, status)
+      VALUES (${subId}, ${userId}, ${p.teacher_id}, 'active')
+      ON CONFLICT DO NOTHING;
+    `
+    await sql`
+      INSERT INTO student_month_access (student_id, teacher_id, allowed_months)
+      VALUES (${userId}, ${p.teacher_id}, ${p.months_list})
+      ON CONFLICT (student_id, teacher_id) DO UPDATE SET allowed_months = EXCLUDED.allowed_months;
     `
 
     // create session
