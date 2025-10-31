@@ -8,46 +8,67 @@ export async function POST(req: Request) {
     const claim = String(body.claim ?? '').trim()
     if (!claim) return NextResponse.json({ ok: false, error: 'missing_claim' }, { status: 400 })
 
-    const rows = (await sql`SELECT id, customer_name, customer_phone, months_list, status, username, password_hash, grade, teacher_id, student_type FROM purchases WHERE claim_token = ${claim} LIMIT 1`) as any[]
+    const rows = (await sql`SELECT id, user_id, customer_name, customer_phone, months_list, status, username, password_hash, grade, teacher_id, student_type FROM purchases WHERE claim_token = ${claim} LIMIT 1`) as any[]
     const p = rows[0]
     if (!p) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
     if (p.status !== 'paid') return NextResponse.json({ ok: false, error: 'not_paid' }, { status: 400 })
 
-    // create student user
-    const userId = 's_' + randomUUID()
-    await sql`
-      INSERT INTO users (id, role, name, phone, username, password_hash, grade, classification, created_at)
-      VALUES (${userId}, 'student', ${p.customer_name}, ${p.customer_phone}, ${p.username}, ${p.password_hash}, ${p.grade}, ${p.student_type}, NOW())
-    `
+    let userId = p.user_id
+    const newMonths: number[] = JSON.parse(p.months_list || '[]')
 
-    const subId = "sub_" + randomUUID()
-    await sql`
-      INSERT INTO teacher_subscriptions (id, student_id, teacher_id, status)
-      VALUES (${subId}, ${userId}, ${p.teacher_id}, 'active')
-      ON CONFLICT DO NOTHING;
-    `
+    // If the purchase record already has a user_id, this is an existing user buying more months.
+    if (userId) {
+      // Fetch existing months
+      const [access] = (await sql`
+        SELECT allowed_months FROM student_month_access
+        WHERE student_id = ${userId} AND teacher_id = ${p.teacher_id}
+        LIMIT 1;
+      `) as any[]
+      const existingMonths: number[] = access?.allowed_months ?? []
 
-    // p.months_list is a JSON string, so we need to parse it into an array
-    const allowedMonthsArray = JSON.parse(p.months_list || '[]')
-    // Manually format the array into a PostgreSQL literal string, e.g., '{1,2,3}'
-    const allowedMonthsPgLiteral = `{${allowedMonthsArray.join(',')}}`
+      // Merge with new months, using a Set to handle duplicates
+      const allMonths = Array.from(new Set([...existingMonths, ...newMonths]))
+      const allMonthsPgLiteral = `{${allMonths.join(',')}}`
 
-    await sql`
-      INSERT INTO student_month_access (student_id, teacher_id, allowed_months)
-      VALUES (${userId}, ${p.teacher_id}, ${allowedMonthsPgLiteral})
-      ON CONFLICT (student_id, teacher_id) DO UPDATE SET allowed_months = EXCLUDED.allowed_months;
-    `
+      // Update the access table
+      await sql`
+        INSERT INTO student_month_access (student_id, teacher_id, allowed_months)
+        VALUES (${userId}, ${p.teacher_id}, ${allMonthsPgLiteral})
+        ON CONFLICT (student_id, teacher_id) DO UPDATE SET allowed_months = EXCLUDED.allowed_months;
+      `
+    } else {
+      // This is a new user registration.
+      userId = 's_' + randomUUID()
+      await sql`
+        INSERT INTO users (id, role, name, phone, username, password_hash, grade, classification, created_at)
+        VALUES (${userId}, 'student', ${p.customer_name}, ${p.customer_phone}, ${p.username}, ${p.password_hash}, ${p.grade}, ${p.student_type}, NOW())
+      `
 
-    // create session
+      const subId = "sub_" + randomUUID()
+      await sql`
+        INSERT INTO teacher_subscriptions (id, student_id, teacher_id, status)
+        VALUES (${subId}, ${userId}, ${p.teacher_id}, 'active')
+        ON CONFLICT DO NOTHING;
+      `
+
+      const newMonthsPgLiteral = `{${newMonths.join(',')}}`
+      await sql`
+        INSERT INTO student_month_access (student_id, teacher_id, allowed_months)
+        VALUES (${userId}, ${p.teacher_id}, ${newMonthsPgLiteral})
+        ON CONFLICT (student_id, teacher_id) DO UPDATE SET allowed_months = EXCLUDED.allowed_months;
+      `
+    }
+
+    // Create a session for the user (either new or existing)
     const sessionId = 'sess_' + randomUUID()
     await sql`
       INSERT INTO sessions (id, user_id, expires_at, created_at)
       VALUES (${sessionId}, ${userId}, NOW() + INTERVAL '30 days', NOW())
     `
 
-    // mark purchase as completed and link user_id if desired
+    // Mark purchase as completed and link user_id if it was a new registration
     await sql`
-      UPDATE purchases SET status = 'paid', paid_at = NOW(), user_id = ${userId}
+      UPDATE purchases SET status = 'completed', paid_at = NOW(), user_id = ${userId}
       WHERE claim_token = ${claim}
     `
 

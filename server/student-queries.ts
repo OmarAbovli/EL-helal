@@ -179,3 +179,93 @@ export async function checkVideoAccess(videoId: string, userId: string): Promise
 
     return { allowed: true }
 }
+
+const ALL_MONTHS_MAP = new Map<number, string>([
+  [1, "January"],
+  [2, "February"],
+  [3, "March"],
+  [4, "April"],
+  [5, "May"],
+  [6, "June"],
+  [7, "July"],
+  [8, "August"],
+  [9, "September"],
+  [10, "October"],
+  [11, "November"],
+  [12, "December"],
+])
+
+export async function getStudentDashboardData(userId: string, { category }: { category?: string } = {}) {
+  const [user] = (await sql`SELECT id, grade FROM users WHERE id = ${userId} LIMIT 1;`) as any[]
+  if (!user) return []
+
+  // 1. Get all of the student's active teacher subscriptions
+  const teacherRows = (await sql`
+    SELECT t.id, t.name
+    FROM teacher_subscriptions ts
+    JOIN users t ON t.id = ts.teacher_id
+    WHERE ts.student_id = ${userId} AND ts.status = 'active'
+  `) as { id: string; name: string }[]
+
+  if (teacherRows.length === 0) return []
+  const teacherIds = teacherRows.map((r) => r.id)
+
+  // 2. Get the student's month access permissions for each teacher
+  const accessRows = (await sql`
+    SELECT teacher_id, allowed_months
+    FROM student_month_access
+    WHERE student_id = ${userId} AND teacher_id = ANY(${teacherIds});
+  `) as { teacher_id: string; allowed_months: number[] }[]
+
+  const accessMap = new Map<string, Set<number>>()
+  for (const row of accessRows) {
+    accessMap.set(row.teacher_id, new Set(row.allowed_months ?? []))
+  }
+
+  // 3. Get all relevant videos from all subscribed teachers
+  const categoryClause = category ? sql`AND category = ${category}` : sql``
+  const videos = (await sql`
+    SELECT id, title, description, url, category, is_free, month, teacher_id, thumbnail_url
+    FROM videos
+    WHERE teacher_id = ANY(${teacherIds}) AND (${user.grade} = ANY(grades))
+    ${categoryClause}
+    ORDER BY created_at DESC
+  `) as any[]
+
+  // 4. Group videos by teacher, then by month
+  const videosByTeacher = new Map<string, Map<number, any[]>>()
+  for (const video of videos) {
+    if (!videosByTeacher.has(video.teacher_id)) {
+      videosByTeacher.set(video.teacher_id, new Map<number, any[]>())
+    }
+    const teacherMap = videosByTeacher.get(video.teacher_id)!
+    const month = video.month ?? 0 // Group free/uncategorized videos under month 0
+    if (!teacherMap.has(month)) {
+      teacherMap.set(month, [])
+    }
+    teacherMap.get(month)!.push(video)
+  }
+
+  // 5. Build the final data structure
+  const result = teacherRows.map((teacher) => {
+    const teacherVideoMap = videosByTeacher.get(teacher.id) ?? new Map<number, any[]>()
+    const studentAccessSet = accessMap.get(teacher.id) ?? new Set<number>()
+
+    const monthlyVideos = Array.from(teacherVideoMap.entries())
+      .map(([month, videos]) => ({
+        month,
+        monthLabel: ALL_MONTHS_MAP.get(month) ?? "Free Videos",
+        isAccessible: month === 0 || studentAccessSet.has(month),
+        videos,
+      }))
+      .sort((a, b) => (a.month === 0 ? -1 : b.month === 0 ? 1 : a.month - b.month))
+
+    return {
+      teacherId: teacher.id,
+      teacherName: teacher.name,
+      monthlyVideos,
+    }
+  })
+
+  return result
+}

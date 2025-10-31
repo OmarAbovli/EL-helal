@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { getCurrentUser } from "@/lib/auth"
 import {
-  getAccessibleVideos,
+  getStudentDashboardData,
   getUpcomingLiveSessions,
   getActiveLiveStreams,
   getAccessibleVideoCategories,
@@ -16,6 +16,7 @@ import { VideoPlayer } from "@/components/video-player"
 import { StudentHeroFX } from "@/components/student-hero-fx"
 import { Button } from "@/components/ui/button"
 import { VideoCategoryFilter } from "@/components/video-category-filter"
+import { PurchaseMonthsButton } from "@/components/purchase-months-button"
 
 export default async function StudentPage({ searchParams }: { searchParams?: { error?: string; category?: string } }) {
   const cookieStore = await cookies()
@@ -46,7 +47,6 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                 <CardTitle>Use QR Login</CardTitle>
                 <CardDescription>Ask your teacher for your QR code. When scanned, it will log you in.</CardDescription>
               </CardHeader>
-
             </Card>
           </div>
         </div>
@@ -54,8 +54,8 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
     )
   }
 
-  const [videos, sessions, activeNow, categories] = await Promise.all([
-    getAccessibleVideos(user.id, { category }),
+  const [teacherVideoGroups, sessions, activeNow, categories] = await Promise.all([
+    getStudentDashboardData(user.id, { category }),
     getUpcomingLiveSessions(user.id),
     getActiveLiveStreams(user.id),
     getAccessibleVideoCategories(user.id),
@@ -101,31 +101,70 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
           </section>
         )}
 
-        {/* Videos */}
-        <section id="videos" className="grid gap-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold">Your Videos</h2>
-            <VideoCategoryFilter categories={categories} />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {videos.map((v) => (
-              <StudentVideoCard
-                key={v.id}
-                id={v.id}
-                title={v.title}
-                source={v.url}
-                thumbnailUrl={v.thumbnail_url || "/course-thumbnail.png"}
-                watermarkText={user.name ? `${user.name} • ${user.id}` : user.id}
-                antiDownload
-              />
+        {/* Videos Section */}
+        <div id="videos" className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h2 className="text-xl font-semibold">Your Videos</h2>
+          <VideoCategoryFilter categories={categories} />
+        </div>
+
+        {teacherVideoGroups.map((teacherGroup) => (
+          <div key={teacherGroup.teacherId} className="mb-16">
+            <h2 className="text-2xl font-bold tracking-tight mb-8">{teacherGroup.teacherName}</h2>
+            {teacherGroup.monthlyVideos.map(({ month, monthLabel, isAccessible, videos }) => (
+              <section key={month} id={`month-${month}`} className="grid gap-6 mb-12">
+                <h3 className="text-lg font-semibold tracking-tight">{monthLabel}</h3>
+                {isAccessible ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {videos.map((v: any) => (
+                      <StudentVideoCard
+                        key={v.id}
+                        id={v.id}
+                        title={v.title}
+                        source={v.url}
+                        thumbnailUrl={v.thumbnail_url || "/course-thumbnail.png"}
+                        watermarkText={user.name ? `${user.name} • ${user.id}` : user.id}
+                        antiDownload
+                      />
+                    ))}
+                    {videos.length === 0 && (
+                      <p className="text-sm text-muted-foreground col-span-full">
+                        No videos for this month yet.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {videos.slice(0, 3).map((v: any) => (
+                      <div
+                        key={v.id}
+                        className="relative rounded-lg border bg-card/50 text-card-foreground shadow-sm aspect-video flex items-center justify-center opacity-50"
+                      >
+                        <p className="font-semibold text-lg">{v.title}</p>
+                      </div>
+                    ))}
+                    <div className="rounded-lg border-2 border-dashed bg-card/30 text-card-foreground flex flex-col items-center justify-center p-6 aspect-video">
+                      <h4 className="text-lg font-semibold">Unlock {monthLabel}</h4>
+                      <p className="text-sm text-muted-foreground mt-1 mb-4">
+                        Get access to all videos for this month.
+                      </p>
+                      <PurchaseMonthsButton
+                        month={month}
+                        monthLabel={monthLabel}
+                        teacherId={teacherGroup.teacherId}
+                      />
+                    </div>
+                  </div>
+                )}
+              </section>
             ))}
-            {videos.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                {category ? `No videos found in category: "${category}"` : "No videos yet."}
-              </p>
-            )}
           </div>
-        </section>
+        ))}
+
+        {teacherVideoGroups.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            {category ? `No videos found in category: "${category}"` : "No videos yet."}
+          </p>
+        )}
 
         {/* Upcoming Live Sessions (Scheduled) */}
         {sessions.length > 0 && (
