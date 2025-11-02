@@ -16,7 +16,7 @@ export default async function QuizPage({ params }: Props) {
   return (
     <main>
       <SiteHeader />
-      <div className="mx-auto max-w-4xl p-6 bg-card">
+      <div className="mx-auto max-w-4xl p-6">
         <h1 className="text-2xl font-semibold">{quiz.title}</h1>
         <QuizPlayer quiz={quiz} />
       </div>

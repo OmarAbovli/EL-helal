@@ -8,7 +8,7 @@ export default function TeacherInteractiveCard() {
 
   return (
 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-4">
-      <div className="text-left dark:bg-black/20 bg-white/20 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+      <div className="text-left">
         <h2 className="text-3xl font-bold animate-fade-in-down">The Expert Teacher</h2>
         <p className="mt-4 text-lg text-slate-600 animate-fade-in-up">Mr. Tamer Helal, with 30 years of experience, makes learning English an enjoyable and seamless journey. Our platform is designed to save you time and enhance your focus.</p>
         <div className="mt-6 space-y-2">

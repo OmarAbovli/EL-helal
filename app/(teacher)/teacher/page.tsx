@@ -103,7 +103,7 @@ export default async function TeacherPage() {
             </div>
           </header>
 
-          <div className="mx-auto w-full max-w-6xl p-4 bg-card">
+          <div className="mx-auto w-full max-w-6xl p-4">
             {/* Dashboard */}
             <section className="grid gap-4" aria-labelledby="dashboard">
               <h2 id="dashboard" className="text-xl font-semibold">

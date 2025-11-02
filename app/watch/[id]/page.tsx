@@ -157,7 +157,7 @@ export default async function WatchPage({ params }: Props) {
         }
       })}} />
       <SiteHeader />
-      <div className="mx-auto grid max-w-5xl gap-6 p-4 sm:p-6 bg-card">
+      <div className="mx-auto grid max-w-5xl gap-6 p-4 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           {video.category ? <Badge variant="outline">{video.category}</Badge> : null}
           {typeof video.is_free === "boolean" ? (
