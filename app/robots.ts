@@ -5,11 +5,26 @@ export default function robots(): MetadataRoute.Robots {
 
   return {
     rules: [
+      // القاعدة العامة لكل المستخدمين
       {
         userAgent: "*",
-        allow: "/",
+        allow: ["/"],
+        disallow: [
+          "/api/",
+          "/admin/",
+          "/teacher/",
+          "/student/",
+          "/community-chat/",
+          "/paymob/",
+          "/qr-login/",
+          "/access-denied/",
+        ],
       },
+
+      // أمثلة على قواعد لمحركات معينة لو حبيت تضيفها لاحقًا
+      // { userAgent: "Googlebot-Image", allow: ["/photos/"], disallow: ["/private/"] },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
+    host: baseUrl,
   };
 }
