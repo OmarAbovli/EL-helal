@@ -12,10 +12,10 @@ interface Video {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // ✅ إزالة السلاش الزائد لو موجود
+  
   const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "https://el-helal-rpe3.vercel.app").replace(/\/$/, "");
 
-  // ✅ الصفحات الثابتة الأساسية فقط (استبعد login / demo / qr-login لأنها مش مفيدة للزحف)
+  
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}`,
@@ -49,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // ✅ صفحات المدرسين (ديناميكية)
+  
   let teachers: User[] = [];
   try {
     teachers = (await sql`
@@ -68,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // ✅ صفحات الفيديوهات (ديناميكية)
+  //  صفحات الفيديوهات (ديناميكية)
   let videos: Video[] = [];
   try {
     videos = (await sql`
