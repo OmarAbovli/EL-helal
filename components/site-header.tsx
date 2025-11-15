@@ -34,7 +34,7 @@ const SiteHeader = async () => {
           >
             T
           </span>
-          <span className="text-sm font-semibold">El-helal</span>
+          <span className="text-sm font-semibold">Competooo</span>
         </Link>
 
         {/* Nav links */}
