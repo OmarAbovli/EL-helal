@@ -30,14 +30,15 @@ export const metadata: Metadata = {
 
 import { Hero3DBook } from "@/components/hero-3d-book"
 import { Card, CardContent } from "@/components/ui/card"
-import { getFeaturedTeachers, getFeaturedVideos, getFreeVideos } from "@/server/public-queries"
+import { getFeaturedTeachers, getFreeVideos } from "@/server/public-queries"
 import SectionHeader from "@/components/section-header"
 import { BookOpenCheck, BrainCircuit, Sparkles, Star, Trophy } from "lucide-react"
 import VideoCardPro from "@/components/video-card-pro"
 import TeacherInteractiveCard from "@/components/teacher-interactive-card"
+import GradePackagesSection from "@/components/grade-packages-section"
 
 export default async function HomePage() {
-  const [videos, free] = await Promise.all([getFeaturedVideos(), getFreeVideos()])
+  const free = await getFreeVideos()
 
   return (
     <main className="text-foreground">
@@ -92,34 +93,7 @@ export default async function HomePage() {
         <TeacherInteractiveCard />
       </section>
 
-      {/* Latest videos */}
-      <section className="py-10">
-        {/* token-based surface */}
-        <div className="mx-auto max-w-6xl rounded-2xl border border-border bg-muted/40 px-4 py-8">
-          <SectionHeader
-            eyebrow="New"
-            title="Latest Videos"
-            subtitle="Fresh explanations, memorable visuals, and structured practice."
-          />
-          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {videos.map((v) => (
-              <VideoCardPro
-                key={v.id}
-                id={v.id}
-                title={v.title}
-                description={v.description}
-                category={v.category}
-                is_free={v.is_free}
-                month={v.month}
-                thumbnail_url={v.thumbnail_url}
-                url={v.url}
-                chip="Trending"
-              />
-            ))}
-            {videos.length === 0 && <p className="text-sm text-muted-foreground">No courses yet.</p>}
-          </div>
-        </div>
-      </section>
+      <GradePackagesSection />
 
       {/* Free videos */}
       <section className="py-10">

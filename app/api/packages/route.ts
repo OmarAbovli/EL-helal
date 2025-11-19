@@ -8,24 +8,44 @@ export async function GET(req: Request) {
     const gradeParam = url.searchParams.get("grade")
     const grade = gradeParam ? Number(gradeParam) : null
 
-    if (!teacherId || !grade || !Number.isFinite(grade)) {
+    if (!grade || !Number.isFinite(grade)) {
       return NextResponse.json(
-        { error: "missing_teacher_or_grade" },
+        { error: "missing_or_invalid_grade" },
         { status: 400 },
       )
     }
 
-    const rows = (await sql`
-      SELECT id, teacher_id, name, description, price, thumbnail_url, grades
-      FROM video_packages
-      WHERE teacher_id = ${teacherId}
-        AND (
-          grades IS NULL
-          OR array_length(grades, 1) = 0
-          OR ${grade} = ANY(grades)
-        )
-      ORDER BY created_at ASC;
-    `) as any[]
+    const includeUngraded = grade === 1
+    const gradeCondition = includeUngraded
+      ? sql`
+          (
+            (grades IS NOT NULL AND ${grade} = ANY(grades))
+            OR grades IS NULL
+            OR array_length(grades, 1) = 0
+          )
+        `
+      : sql`
+          grades IS NOT NULL AND ${grade} = ANY(grades)
+        `
+
+    let rows: any[]
+
+    if (teacherId) {
+      rows = (await sql`
+        SELECT id, teacher_id, name, description, price, thumbnail_url, grades
+        FROM video_packages
+        WHERE teacher_id = ${teacherId}
+          AND ${gradeCondition}
+        ORDER BY created_at ASC;
+      `) as any[]
+    } else {
+      rows = (await sql`
+        SELECT id, teacher_id, name, description, price, thumbnail_url, grades
+        FROM video_packages
+        WHERE ${gradeCondition}
+        ORDER BY created_at ASC;
+      `) as any[]
+    }
 
     return NextResponse.json(rows)
   } catch (error) {
