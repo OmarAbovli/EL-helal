@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth"
 import DarkModeToggle from "@/components/dark-mode-toggle"
 import { LogoutButton } from "@/components/logout-button"
 import NotificationBell from "@/components/notification-bell"
+import { MobileNav } from "@/components/mobile-nav"
 
 const SiteHeader = async () => {
   const cookieStore = await cookies()
@@ -57,9 +58,14 @@ const SiteHeader = async () => {
             )
           )}
           {user && user.role === 'student' && (
-            <Link href="/student/training" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Exams
-            </Link>
+            <>
+              <Link href="/student/training" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Exams
+              </Link>
+              <Link href="/student/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Profile
+              </Link>
+            </>
           )}
           <Link href="/photos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Photos
@@ -77,6 +83,10 @@ const SiteHeader = async () => {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Mobile menu - visible only on small screens */}
+          <MobileNav user={user} dashboardUrl={getDashboardUrl()} />
+          
+          {/* Desktop actions */}
           {user && user.role === 'student' && <NotificationBell />}
           <DarkModeToggle />
           {user && <LogoutButton />}

@@ -39,7 +39,8 @@ export async function startVoiceCall(grade: number) {
     if (existingCalls.length > 0) {
       // Add user's name to existing call URL
       const userName = encodeURIComponent(me.name || 'مستخدم')
-      const roomUrlWithName = `${existingCalls[0].room_url}#userInfo.displayName="${userName}"`
+      const baseUrl = existingCalls[0].room_url.split('#')[0]
+      const roomUrlWithName = `${baseUrl}#config.prejoinPageEnabled=false&config.enableClosePage=false&userInfo.displayName="${userName}"`
       return { 
         success: true, 
         call: { ...existingCalls[0], room_url: roomUrlWithName },
@@ -52,7 +53,8 @@ export async function startVoiceCall(grade: number) {
     
     // For simplicity, we'll use a Jitsi Meet room (free, no API key needed)
     // Or you can replace this with Daily.co, Agora, etc.
-    const roomUrl = `https://meet.jit.si/${roomName}`
+    // Add config to prevent close page from showing
+    const roomUrl = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.enableClosePage=false`
 
     const result = await sql`
       INSERT INTO voice_calls (grade, started_by, room_name, room_url, status)
@@ -68,9 +70,10 @@ export async function startVoiceCall(grade: number) {
       VALUES (${call.id}, ${me.id})
     `
 
-    // Add user's name to the URL
+    // Add user's name to the URL (preserving existing config)
     const userName = encodeURIComponent(me.name || 'مستخدم')
-    const roomUrlWithName = `${call.room_url}#userInfo.displayName="${userName}"`
+    const baseUrl = call.room_url.split('#')[0]
+    const roomUrlWithName = `${baseUrl}#config.prejoinPageEnabled=false&config.enableClosePage=false&userInfo.displayName="${userName}"`
 
     revalidatePath('/community-chat')
     revalidatePath('/student/live')
@@ -115,9 +118,10 @@ export async function joinVoiceCall(callId: string) {
       // Ignore duplicate entry
     }
 
-    // Add user's name to the URL for Jitsi
+    // Add user's name to the URL for Jitsi and disable close page
     const userName = encodeURIComponent(me.name || 'مستخدم')
-    const roomUrlWithName = `${call.room_url}#userInfo.displayName="${userName}"`
+    const baseUrl = call.room_url.split('#')[0]
+    const roomUrlWithName = `${baseUrl}#config.prejoinPageEnabled=false&config.enableClosePage=false&userInfo.displayName="${userName}"`
 
     return { success: true, call: { ...call, room_url: roomUrlWithName } }
   } catch (error: any) {
@@ -288,10 +292,11 @@ export async function getActiveTeacherCallForStudent() {
       return { success: true, call: null }
     }
 
-    // Add student's name to the URL
+    // Add student's name to the URL and disable close page
     const userName = encodeURIComponent(me.name || 'طالب')
     const call = calls[0]
-    const roomUrlWithName = `${call.room_url}#userInfo.displayName="${userName}"`
+    const baseUrl = call.room_url.split('#')[0]
+    const roomUrlWithName = `${baseUrl}#config.prejoinPageEnabled=false&config.enableClosePage=false&userInfo.displayName="${userName}"`
 
     return { success: true, call: { ...call, room_url: roomUrlWithName } }
   } catch (error: any) {
