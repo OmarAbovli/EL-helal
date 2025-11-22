@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, QrCode } from "lucide-react"
+import Link from "next/link"
 
 const initialState: PasswordLoginState = { ok: false, message: "" }
 
@@ -87,6 +88,22 @@ export default function LoginForm() {
           <Button type="submit" disabled={isPending}>
             {isPending ? "Signing in…" : "Login"}
           </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">أو</span>
+            </div>
+          </div>
+
+          <Link href="/qr-scanner">
+            <Button type="button" variant="outline" className="w-full" disabled={isPending}>
+              <QrCode className="h-4 w-4 mr-2" />
+              تسجيل الدخول بـ QR Code
+            </Button>
+          </Link>
 
           <p className="text-xs text-muted-foreground">
             Login is handled securely on the server via a Server Action. If you forgot your credentials, contact your
