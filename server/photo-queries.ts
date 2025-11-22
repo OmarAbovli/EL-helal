@@ -48,12 +48,13 @@ export async function getRecentPhotos(limit = 50, offset = 0): Promise<RecentPho
       p.url,
       p.caption,
       p.created_at,
-      u.name AS teacher_name,
-      u.avatar_url AS teacher_avatar_url,
+      COALESCE(p.uploader_name, u.name) AS teacher_name,
+      COALESCE(uploader.avatar_url, u.avatar_url) AS teacher_avatar_url,
       COALESCE(l.cnt, 0) AS like_count,
       COALESCE(c.cnt, 0) AS comment_count
     FROM photos p
     JOIN users u ON u.id = p.teacher_id
+    LEFT JOIN users uploader ON uploader.id = p.uploader_id
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::int AS cnt
       FROM photo_likes pl

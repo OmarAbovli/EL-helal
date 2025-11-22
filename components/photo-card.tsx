@@ -4,9 +4,11 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import PhotoLikeButton from "@/components/photo-like-button"
 import PhotoCommentForm from "@/components/photo-comment-form"
-import { MessageCircle } from "lucide-react"
+import { MessageCircle, Trash2 } from "lucide-react"
+import { deletePhoto } from "@/server/photo-actions"
 
 export type PhotoCardProps = {
   id: string
@@ -19,6 +21,8 @@ export type PhotoCardProps = {
   teacherName: string | null
   teacherAvatarUrl: string | null
   createdAt?: string
+  isTeacher?: boolean
+  currentUserId?: string
 }
 
 type PhotoComment = {
@@ -41,11 +45,29 @@ export default function PhotoCard({
   teacherId,
   teacherName,
   teacherAvatarUrl,
+  isTeacher = false,
+  currentUserId,
 }: PhotoCardProps) {
   const [openComments, setOpenComments] = useState(false)
   const [comments, setComments] = useState<PhotoComment[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [counts, setCounts] = useState({ likes: likeCount, comments: commentCount })
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!confirm('هل أنت متأكد من حذف هذه الصورة؟')) return
+    
+    setDeleting(true)
+    const result = await deletePhoto(id)
+    if (result.success) {
+      window.location.reload()
+    } else {
+      alert(result.error || 'فشل حذف الصورة')
+      setDeleting(false)
+    }
+  }
+
+  const canDelete = isTeacher && currentUserId === teacherId
 
   useEffect(() => {
     async function load() {
@@ -100,6 +122,17 @@ export default function PhotoCard({
           alt={caption ?? "Teacher photo"}
           className="h-72 w-full object-cover sm:h-96"
         />
+        {canDelete && (
+          <Button
+            onClick={handleDelete}
+            disabled={deleting}
+            variant="destructive"
+            size="sm"
+            className="absolute top-2 right-2"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       <CardContent className="grid gap-3 p-3">

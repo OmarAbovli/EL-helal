@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 import { VideoCategoryFilter } from "@/components/video-category-filter"
 import { PurchasePackageButton } from "@/components/purchase-package-button"
 import { ExamCountdown } from "@/components/exam-countdown"
+import { StudentLiveCallBanner } from "@/components/student-live-call-banner"
 
 export default async function StudentPage({ searchParams }: { searchParams?: { error?: string; category?: string } }) {
   const cookieStore = await cookies()
@@ -77,6 +78,11 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
       <StudentHeroFX name={user.name ?? "Student"} ctaHref="#videos" />
 
       <div className="mx-auto max-w-6xl p-4 -mt-20">
+        {/* Voice Call Banner - Always Show */}
+        <section className="mb-6">
+          <StudentLiveCallBanner />
+        </section>
+
         {/* Live Now - Streams & Active Exams */}
         {(activeNow.length > 0 || activeExams.length > 0) && (
           <section id="live-now" className="mb-8 grid gap-4">

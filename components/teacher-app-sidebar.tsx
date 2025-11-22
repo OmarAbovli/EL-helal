@@ -14,7 +14,7 @@ import {
   SidebarRail 
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
-import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck } from "lucide-react"
+import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck, Image } from "lucide-react"
 
 const items = [
   { title: "لوحة التحكم", href: "/teacher", icon: Gauge },
@@ -23,6 +23,7 @@ const items = [
   { title: "فيديوهاتي", href: "/teacher/videos", icon: Grid2X2 },
   { title: "الباقات", href: "/teacher/packages", icon: Grid2X2 },
   { title: "الطلاب", href: "/teacher/students", icon: Users },
+  { title: "الصور المنتظرة", href: "/teacher/photos/pending", icon: Image },
   { title: "تسجيل الدخول بـ QR", href: "/teacher/qr-login", icon: QrCode },
   { title: "الإعدادات", href: "/teacher/settings", icon: Settings },
   { title: "الاختبارات", href: "/teacher/quizzes", icon: PencilRuler },
@@ -31,9 +32,10 @@ const items = [
 
 interface TeacherAppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   unreadCount?: number
+  pendingPhotosCount?: number
 }
 
-export function TeacherAppSidebar({ unreadCount = 0, ...props }: TeacherAppSidebarProps) {
+export function TeacherAppSidebar({ unreadCount = 0, pendingPhotosCount = 0, ...props }: TeacherAppSidebarProps) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -56,6 +58,9 @@ export function TeacherAppSidebar({ unreadCount = 0, ...props }: TeacherAppSideb
                       </div>
                       {item.title === "الرسائل" && unreadCount > 0 && (
                         <Badge className="h-5 w-5 p-0 flex items-center justify-center text-xs">{unreadCount}</Badge>
+                      )}
+                      {item.title === "الصور المنتظرة" && pendingPhotosCount > 0 && (
+                        <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-xs bg-amber-500">{pendingPhotosCount}</Badge>
                       )}
                     </a>
                   </SidebarMenuButton>
