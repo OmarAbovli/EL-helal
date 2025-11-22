@@ -83,15 +83,7 @@ export default function StudentVideoCard({
             <div className="absolute inset-0 grid place-items-center bg-black/20 opacity-100 group-hover:bg-black/30 transition-colors">
               <span className="inline-flex items-center gap-2 rounded-full bg-background/90 px-3 py-2 text-sm font-medium text-primary shadow">
                 <Play className="h-4 w-4" />
-                {kind === 'yt'
-                  ? 'Play (YouTube)'
-                  : kind === 'vimeo'
-                    ? 'Play (Vimeo)'
-                    : kind === 'bunny-embed'
-                      ? 'Play (Bunny)'
-                      : kind === 'iframe-generic'
-                        ? 'Play (Embed)'
-                        : 'Play'}
+                Play
               </span>
             </div>
           </button>

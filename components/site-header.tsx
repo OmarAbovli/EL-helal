@@ -56,6 +56,11 @@ const SiteHeader = async () => {
               </Link>
             )
           )}
+          {user && user.role === 'student' && (
+            <Link href="/student/training" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Exams
+            </Link>
+          )}
           <Link href="/photos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Photos
           </Link>

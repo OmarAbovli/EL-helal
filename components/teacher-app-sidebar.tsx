@@ -14,7 +14,7 @@ import {
   SidebarRail 
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
-import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail } from "lucide-react"
+import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck } from "lucide-react"
 
 const items = [
   { title: "لوحة التحكم", href: "/teacher", icon: Gauge },
@@ -26,6 +26,7 @@ const items = [
   { title: "تسجيل الدخول بـ QR", href: "/teacher/qr-login", icon: QrCode },
   { title: "الإعدادات", href: "/teacher/settings", icon: Settings },
   { title: "الاختبارات", href: "/teacher/quizzes", icon: PencilRuler },
+  { title: "اختبارات لايف", href: "/teacher/exams", icon: ClipboardCheck },
 ]
 
 interface TeacherAppSidebarProps extends React.ComponentProps<typeof Sidebar> {

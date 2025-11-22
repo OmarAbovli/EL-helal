@@ -24,7 +24,7 @@ export default async function QuizSubmissionDetailsPage({
       </h1>
       <p className="text-lg mb-4 text-gray-900 dark:text-gray-100">الدرجة: {submission.score}%</p>
       <p className="text-lg mb-8 text-gray-900 dark:text-gray-100">
-        تاريخ التقديم: {new Date(submission.submitted_at).toLocaleString()}
+        تاريخ التقديم: {new Date(submission.submitted_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}
       </p>
 
       <div className="space-y-8">

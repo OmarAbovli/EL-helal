@@ -21,7 +21,7 @@ export default function LoginPage() {
       <section className="relative flex flex-col min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950 dark:via-zinc-950 dark:to-teal-950">
         <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-8 px-4 py-12 md:grid-cols-2">
           <div className="flex flex-col justify-center">
-            <h1 className="text-3xl font-semibold">Login to El-helal</h1>
+            <h1 className="text-3xl font-semibold">Login to Competooo</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {
                 "Use the username and password sent to you by your teacher. If you don’t have a username or password, you can get one by contacting your teacher."

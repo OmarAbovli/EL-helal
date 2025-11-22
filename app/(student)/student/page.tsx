@@ -11,12 +11,15 @@ import {
   getUpcomingLiveSessions,
   getActiveLiveStreams,
   getAccessibleVideoCategories,
+  getUpcomingLiveExams,
 } from "@/server/student-queries"
+import { getAvailableExams } from "@/server/student-exam-actions"
 import { VideoPlayer } from "@/components/video-player"
 import { StudentHeroFX } from "@/components/student-hero-fx"
 import { Button } from "@/components/ui/button"
 import { VideoCategoryFilter } from "@/components/video-category-filter"
 import { PurchasePackageButton } from "@/components/purchase-package-button"
+import { ExamCountdown } from "@/components/exam-countdown"
 
 export default async function StudentPage({ searchParams }: { searchParams?: { error?: string; category?: string } }) {
   const cookieStore = await cookies()
@@ -54,12 +57,19 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
     )
   }
 
-  const [teacherVideoGroups, sessions, activeNow, categories] = await Promise.all([
+  const [teacherVideoGroups, sessions, activeNow, categories, availableExamsResult, upcomingExams] = await Promise.all([
     getStudentDashboardData(user.id, { category }),
     getUpcomingLiveSessions(user.id),
     getActiveLiveStreams(user.id),
     getAccessibleVideoCategories(user.id),
+    getAvailableExams(),
+    getUpcomingLiveExams(user.id),
   ])
+
+  // Filter active exams only
+  const activeExams = availableExamsResult.success 
+    ? (availableExamsResult.exams || []).filter((exam: any) => exam.status === 'active')
+    : []
 
   return (
     <main>
@@ -67,25 +77,30 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
       <StudentHeroFX name={user.name ?? "Student"} ctaHref="#videos" />
 
       <div className="mx-auto max-w-6xl p-4 -mt-20">
-        {/* Live Now */}
-        {activeNow.length > 0 && (
+        {/* Live Now - Streams & Active Exams */}
+        {(activeNow.length > 0 || activeExams.length > 0) && (
           <section id="live-now" className="mb-8 grid gap-4">
             <Card className="border-primary/20 bg-primary/10">
               <CardHeader>
                 <CardTitle>Live Now</CardTitle>
                 <CardDescription>
-                  Your teacher{activeNow.length > 1 ? "s are" : " is"} live right now. Join the stream.
+                  {activeNow.length > 0 && activeExams.length > 0 
+                    ? "Your teacher is live and there are active exams. Join the stream or start your exam."
+                    : activeNow.length > 0
+                    ? `Your teacher${activeNow.length > 1 ? "s are" : " is"} live right now. Join the stream.`
+                    : "There are active exams available now. Start your exam."}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {/* Live Streams */}
                   {activeNow.map((s) => (
                     <div
                       key={s.teacher_id}
                       className="flex items-center justify-between gap-3 rounded-md border bg-card p-3"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{s.title}</p>
+                        <p className="truncate text-sm font-medium">🔴 {s.title}</p>
                         <p className="truncate text-xs text-muted-foreground">Teacher: {s.teacher_name}</p>
                       </div>
                       {s.url ? (
@@ -93,6 +108,28 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                           <Button size="sm">Join</Button>
                         </a>
                       ) : null}
+                    </div>
+                  ))}
+                  
+                  {/* Active Exams */}
+                  {activeExams.map((exam: any) => (
+                    <div
+                      key={exam.id}
+                      className="flex flex-col gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3"
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm mb-1">📝 {exam.title}</p>
+                        <p className="text-xs text-muted-foreground mb-2">{exam.description || 'اختبار مباشر'}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>⏱️ {exam.duration_minutes}د</span>
+                          <span>🎯 {exam.passing_score}%</span>
+                        </div>
+                      </div>
+                      <Link href={`/student/exam/${exam.id}`}>
+                        <Button size="sm" className="w-full bg-gradient-to-r from-emerald-500 to-teal-500">
+                          ابدأ الاختبار
+                        </Button>
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -162,22 +199,58 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
           </p>
         )}
 
-        {/* Upcoming Live Sessions (Scheduled) */}
-        {sessions.length > 0 && (
+        {/* Upcoming Live Sessions & Exams */}
+        {(sessions.length > 0 || upcomingExams.length > 0) && (
           <section id="live" className="mt-12 grid gap-4">
-            <h2 className="text-xl font-semibold">Upcoming Live Sessions</h2>
+            <h2 className="text-xl font-semibold">Upcoming Live Sessions & Exams</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Live Sessions */}
               {sessions.map((s: any) => (
                 <div
                   key={s.id}
                   className="flex flex-col justify-between gap-3 rounded-md border bg-card p-3"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{s.title}</p>
+                    <p className="truncate text-sm font-medium">📡 {s.title}</p>
                     <p className="truncate text-xs text-muted-foreground">Teacher: {s.teacher_name}</p>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Starts: {new Date(s.start_at).toLocaleString()}
+                    Starts: {new Date(s.start_at).toLocaleString('ar-EG', { 
+                      timeZone: 'Africa/Cairo',
+                      month: 'short', 
+                      day: 'numeric', 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </div>
+                </div>
+              ))}
+              
+              {/* Upcoming Exams */}
+              {upcomingExams.map((exam: any) => (
+                <div
+                  key={exam.id}
+                  className="flex flex-col justify-between gap-3 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">📝 {exam.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">Teacher: {exam.teacher_name}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <span>⏱️ {exam.duration_minutes}د</span>
+                      <span>🎯 {exam.passing_score}%</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <ExamCountdown scheduledAt={exam.scheduled_at} />
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(exam.scheduled_at).toLocaleString('ar-EG', { 
+                        timeZone: 'Africa/Cairo',
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}

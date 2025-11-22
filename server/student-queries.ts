@@ -353,3 +353,80 @@ export async function getStudentDashboardData(userId: string, { category }: { ca
 
   return Array.from(teacherDataMap.values())
 }
+
+/**
+ * Get upcoming live exams for student
+ */
+export async function getUpcomingLiveExams(userId: string) {
+  const [user] = (await sql`SELECT id, grade FROM users WHERE id = ${userId} LIMIT 1;`) as any[]
+  if (!user) return []
+
+  const now = new Date().toISOString()
+
+  const exams = await sql`
+    SELECT 
+      e.id,
+      e.title,
+      e.description,
+      e.duration_minutes,
+      e.scheduled_at,
+      e.ends_at,
+      e.passing_score,
+      u.name as teacher_name
+    FROM live_exams e
+    JOIN users u ON e.teacher_id = u.id
+    WHERE e.grade = ${user.grade}
+      AND e.scheduled_at > ${now}
+    ORDER BY e.scheduled_at ASC
+    LIMIT 10
+  `
+
+  return exams
+}
+
+/**
+ * Get video quizzes accessible by student
+ */
+export async function getStudentQuizzes(userId: string) {
+  const [user] = (await sql`SELECT id, grade FROM users WHERE id = ${userId} LIMIT 1;`) as any[]
+  if (!user) return []
+
+  // Get teacher subscriptions
+  const teacherRows = (await sql`
+    SELECT teacher_id FROM teacher_subscriptions
+    WHERE student_id = ${userId} AND status = 'active'
+  `) as any[]
+  const teacherIds = teacherRows.map((r) => r.teacher_id)
+  if (teacherIds.length === 0) return []
+
+  // Get accessible packages
+  const { accessiblePackageIds } = await getPackageAccessInfo(userId, teacherIds)
+
+  // Get quizzes from accessible videos
+  const quizzes = await sql`
+    SELECT 
+      q.id,
+      q.title,
+      q.video_id,
+      q.description,
+      q.time_limit_minutes,
+      q.passing_score,
+      q.max_attempts,
+      v.title as video_title,
+      v.package_id,
+      u.name as teacher_name,
+      (SELECT COUNT(*) FROM quiz_submissions WHERE quiz_id = q.id AND student_id = ${userId}) as attempt_count,
+      (SELECT MAX(score) FROM quiz_submissions WHERE quiz_id = q.id AND student_id = ${userId}) as best_score
+    FROM quizzes q
+    JOIN videos v ON q.video_id = v.id
+    JOIN users u ON v.teacher_id = u.id
+    WHERE v.teacher_id = ANY(${teacherIds})
+      AND (
+        v.package_id IS NULL 
+        OR v.package_id = ANY(${Array.from(accessiblePackageIds)})
+      )
+    ORDER BY q.created_at DESC
+  `
+
+  return quizzes
+}

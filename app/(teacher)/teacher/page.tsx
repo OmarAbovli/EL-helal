@@ -134,7 +134,7 @@ export default async function TeacherPage() {
                       <div>
                         <p className="font-medium">{nextLive[0].title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(nextLive[0].start_at).toLocaleString()}
+                          {new Date(nextLive[0].start_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}
                         </p>
                       </div>
                     ) : (
@@ -252,7 +252,7 @@ export default async function TeacherPage() {
                             <p className="text-sm text-muted-foreground">No caption</p>
                           )}
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {new Date(p.created_at).toLocaleString()}
+                            {new Date(p.created_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}
                           </p>
                         </div>
                       </div>
