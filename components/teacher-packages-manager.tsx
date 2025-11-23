@@ -47,6 +47,7 @@ export function TeacherPackagesManager({ initialPackages }: { initialPackages: V
                   <th className="py-2 pr-3">Name</th>
                   <th className="py-2 pr-3">Description</th>
                   <th className="py-2 pr-3">Price</th>
+                  <th className="py-2 pr-3">Grades</th>
                   <th className="py-2 pr-3">Actions</th>
                 </tr>
               </thead>

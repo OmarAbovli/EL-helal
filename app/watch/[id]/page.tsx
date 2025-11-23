@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link"
 import SiteHeader from "@/components/site-header"
-import SecureVideoPlayer from "@/components/secure-video-player"
+import ProfessionalVideoPlayer from "@/components/professional-video-player"
 import {
   getVideoById,
   getResourcesForVideo,
@@ -13,7 +13,7 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const videoId = params.id;
+  const { id: videoId } = await params;
   const video = await getVideoById(videoId);
 
   if (!video) {
@@ -67,26 +67,18 @@ import { getCurrentUser } from "@/lib/auth"
 import { FileText, PencilRuler } from "lucide-react"
 import { cookies } from "next/headers"
 
-type Props = { params: { id: string } }
+type PageProps = { params: { id: string } }
 
-function sanitizePhoneForWa(phone?: string | null) {
-  if (!phone) return null
-  const trimmed = phone.trim()
-  const plus = trimmed.startsWith("+") ? "+" : ""
-  const digits = trimmed.replace(/[^\d]/g, "")
-  return digits ? `${plus}${digits}`.replace(/\+/g, "") : null
-}
-
-function makeWaUrl(phone?: string | null, videoTitle?: string | null, teacherName?: string | null) {
-  const clean = sanitizePhoneForWa(phone)
-  if (!clean) return null
+function makeWaUrl(videoTitle?: string | null, teacherName?: string | null) {
+  // استخدام رقم WhatsApp الثابت للتواصل
+  const whatsappPhone = '201503860035'
   const msg = `Hello ${teacherName || "Teacher"}, I would like to get access to: ${videoTitle || "your video"}.`
   const text = encodeURIComponent(msg)
-  return `https://wa.me/${clean}?text=${text}`
+  return `https://wa.me/${whatsappPhone}?text=${text}`
 }
 
-export default async function WatchPage({ params }: Props) {
-  const videoId = params.id
+export default async function WatchPage({ params }: PageProps) {
+  const { id: videoId } = await params
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get("session_id")?.value
   const user = await getCurrentUser(sessionCookie)
@@ -121,7 +113,7 @@ export default async function WatchPage({ params }: Props) {
     getQuizzesForVideo(videoId),
   ])
 
-  const waUrl = makeWaUrl(video.teacher_phone, video.title, video.teacher_name)
+  const waUrl = makeWaUrl(video.title, video.teacher_name)
 
   return (
     <main>
@@ -184,18 +176,20 @@ export default async function WatchPage({ params }: Props) {
           </CardHeader>
           <CardContent>
             {access.allowed ? (
-              <SecureVideoPlayer
-                source={video.url ?? ""}
-                title={video.title ?? "Video"}
+              <ProfessionalVideoPlayer
+                videoId={video.id}
+                videoUrl={video.url ?? ""}
+                videoTitle={video.title ?? "Video"}
+                videoDescription={video.description}
                 watermarkText={user?.name ? `${user.name} • ${user.id}` : ""}
-                antiDownload
-                aspectRatio="16:9"
+                teacherPhone={video.teacher_phone}
+                teacherName={video.teacher_name}
               />
             ) : (
               <AccessMessage
                 reason={access.reason!}
                 teacherName={video.teacher_name ?? "the teacher"}
-                waUrl={waUrl ?? undefined}
+                waUrl={waUrl}
               />
             )}
           </CardContent>
@@ -254,15 +248,15 @@ function AccessMessage({
   teacherName,
   waUrl,
 }: {
-  reason: "login-required" | "subscribe-required" | "month-locked" | "grade-locked" | "not-found"
+  reason: "login-required" | "subscribe-required" | "subscription-required" | "month-locked" | "package-locked" | "grade-locked" | "not-found"
   teacherName: string
-  waUrl?: string
+  waUrl: string
 }) {
-  const contactButton = waUrl ? (
+  const contactButton = (
     <a href={waUrl} target="_blank" rel="noopener noreferrer">
       <Button>Contact on WhatsApp</Button>
     </a>
-  ) : null
+  )
 
   if (reason === "login-required") {
     return (
@@ -280,11 +274,11 @@ function AccessMessage({
       </div>
     )
   }
-  if (reason === "subscribe-required") {
+  if (reason === "subscribe-required" || reason === "subscription-required") {
     return (
       <div className="grid gap-3">
         <div className="rounded-md border p-3 text-sm">
-          You don’t have an active subscription to {teacherName}. Please contact the teacher to be added.
+          You don't have an active subscription to {teacherName}. Please contact the teacher to be added.
         </div>
         <div className="flex flex-wrap gap-2">{contactButton}</div>
       </div>
@@ -300,11 +294,21 @@ function AccessMessage({
       </div>
     )
   }
-  // month-locked
+  if (reason === "package-locked") {
+    return (
+      <div className="grid gap-3">
+        <div className="rounded-md border p-3 text-sm">
+          You don't have access to this package. Please contact {teacherName} to purchase this package.
+        </div>
+        <div className="flex flex-wrap gap-2">{contactButton}</div>
+      </div>
+    )
+  }
+  // month-locked or other
   return (
     <div className="grid gap-3">
       <div className="rounded-md border p-3 text-sm">
-        Your account doesn’t have this month unlocked yet. Ask {teacherName} to unlock the month for you.
+        Your account doesn't have access to this content. Ask {teacherName} for access.
       </div>
       <div className="flex flex-wrap gap-2">{contactButton}</div>
     </div>

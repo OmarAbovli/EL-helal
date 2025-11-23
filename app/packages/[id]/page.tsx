@@ -16,7 +16,7 @@ function makeWhatsAppUrl(pkgName: string) {
 // Simple server-side query: get package info + its videos (public, no auth required).
 async function getPackageWithVideos(packageId: string) {
   const [pkg] = (await sql`
-    SELECT id, teacher_id, name, description, price, thumbnail_url
+    SELECT id, teacher_id, name, description, price, thumbnail_url, grades
     FROM video_packages
     WHERE id = ${packageId}
     LIMIT 1;

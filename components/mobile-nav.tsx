@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, MessageCircle, Camera, LayoutDashboard, LogIn, Info, FileText, Sparkles, UserCircle } from "lucide-react"
+import { Menu, MessageCircle, Camera, LayoutDashboard, LogIn, Info, FileText, Sparkles, UserCircle, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -83,6 +83,14 @@ export function MobileNav({ user, dashboardUrl }: MobileNavProps) {
               >
                 <FileText className="h-4 w-4 text-blue-500" />
                 <span>الاختبارات</span>
+              </Link>
+              <Link
+                href="/student/practice"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 active:scale-95 transition-all shadow-sm mx-3 my-1"
+                onClick={() => setOpen(false)}
+              >
+                <Bot className="h-4 w-4" />
+                <span>🤖 مارس اللغة مع AI</span>
               </Link>
               <Link
                 href="/student/profile"

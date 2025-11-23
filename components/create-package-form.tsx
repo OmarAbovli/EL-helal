@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { createPackage } from "@/server/package-actions"
 import { useToast } from "@/hooks/use-toast"
 import { ThumbnailUpload } from "./thumbnail-upload"
@@ -15,9 +16,16 @@ export function CreatePackageForm({ onFinished }: { onFinished?: () => void }) {
   const [description, setDescription] = useState("")
   const [price, setPrice] = useState("") // Stored as string to handle empty input
   const [thumbnailUrl, setThumbnailUrl] = useState("")
+  const [selectedGrades, setSelectedGrades] = useState<number[]>([])
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
   const router = useRouter()
+
+  const toggleGrade = (grade: number) => {
+    setSelectedGrades((prev) =>
+      prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]
+    )
+  }
 
   return (
     <form
@@ -37,7 +45,13 @@ export function CreatePackageForm({ onFinished }: { onFinished?: () => void }) {
         console.log("CreatePackageForm: Starting transition to call createPackage.")
         startTransition(async () => {
           try {
-            const res = await createPackage({ name, description, price: priceInCents, thumbnailUrl })
+            const res = await createPackage({ 
+              name, 
+              description, 
+              price: priceInCents, 
+              thumbnailUrl,
+              grades: selectedGrades.length > 0 ? selectedGrades : undefined
+            })
             console.log("CreatePackageForm: Received response from createPackage:", res)
 
             if (res?.ok) {
@@ -87,6 +101,28 @@ export function CreatePackageForm({ onFinished }: { onFinished?: () => void }) {
       <div className="space-y-2">
         <Label>Package Thumbnail</Label>
         <ThumbnailUpload value={thumbnailUrl} onChange={setThumbnailUrl} />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Target Grades (Secondary School)</Label>
+        <p className="text-sm text-muted-foreground mb-2">Select which grades can access this package. Leave empty to make it available for all grades.</p>
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((grade) => (
+            <div key={grade} className="flex items-center space-x-2">
+              <Checkbox
+                id={`grade-${grade}`}
+                checked={selectedGrades.includes(grade)}
+                onCheckedChange={() => toggleGrade(grade)}
+              />
+              <label
+                htmlFor={`grade-${grade}`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Grade {grade} Secondary
+              </label>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="flex justify-end gap-2">

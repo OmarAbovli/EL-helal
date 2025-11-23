@@ -62,6 +62,12 @@ const SiteHeader = async () => {
               <Link href="/student/training" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Exams
               </Link>
+              <Link 
+                href="/student/practice" 
+                className="text-sm px-3 py-1 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all shadow-sm"
+              >
+                🤖 مارس اللغة
+              </Link>
               <Link href="/student/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Profile
               </Link>

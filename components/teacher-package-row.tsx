@@ -37,6 +37,10 @@ export function TeacherPackageRow({ pkg }: { pkg: VideoPackage }) {
     })
   }
 
+  const gradesDisplay = pkg.grades && pkg.grades.length > 0 
+    ? pkg.grades.sort().map(g => `Grade ${g}`).join(", ")
+    : "All Grades"
+
   return (
     <tr className="border-t align-top">
       <td className="py-2 pr-3">
@@ -52,6 +56,9 @@ export function TeacherPackageRow({ pkg }: { pkg: VideoPackage }) {
             currency: "EGP",
           })}
         </div>
+      </td>
+      <td className="py-2 pr-3">
+        <div className="text-sm text-muted-foreground">{gradesDisplay}</div>
       </td>
       <td className="py-2 pr-3">
         <div className="flex flex-wrap gap-2">

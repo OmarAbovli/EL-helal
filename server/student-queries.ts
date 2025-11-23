@@ -281,8 +281,8 @@ export async function checkVideoAccess(
   return { allowed: false, reason: "package-locked" }
 }
 
-export async function getStudentDashboardData(userId: string, { category }: { category?: string } = {}) {
-  const [user] = (await sql`SELECT id, grade FROM users WHERE id = ${userId} LIMIT 1;`) as any[]
+export async function getStudentDashboardData(studentId: string, filters: { category?: string; includeWatchInfo?: boolean } = {}) {
+  const [user] = (await sql`SELECT id, grade FROM users WHERE id = ${studentId} LIMIT 1;`) as any[]
   if (!user) return []
 
   // 1. Get all of the student's active teacher subscriptions
@@ -290,12 +290,12 @@ export async function getStudentDashboardData(userId: string, { category }: { ca
     SELECT t.id, t.name
     FROM teacher_subscriptions ts
     JOIN users t ON t.id = ts.teacher_id
-    WHERE ts.student_id = ${userId} AND ts.status = 'active'
+    WHERE ts.student_id = ${studentId} AND ts.status = 'active'
   `) as { id: string; name: string }[]
 
   if (teacherRows.length === 0) return []
   const teacherIds = teacherRows.map((r) => r.id)
-  const { accessiblePackageIds } = await getPackageAccessInfo(userId, teacherIds)
+  const { accessiblePackageIds } = await getPackageAccessInfo(studentId, teacherIds)
 
   // 2. Get all packages from all subscribed teachers
   const allPackages = (await sql`
@@ -306,7 +306,7 @@ export async function getStudentDashboardData(userId: string, { category }: { ca
   `) as any[]
 
   // 3. Get all relevant videos from all subscribed teachers
-  const categoryClause = category ? sql`AND category = ${category}` : sql``
+  const categoryClause = filters.category ? sql`AND category = ${filters.category}` : sql``
   const videos = (await sql`
     SELECT id, title, description, url, category, is_free, package_id, teacher_id, thumbnail_url
     FROM videos

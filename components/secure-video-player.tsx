@@ -12,6 +12,8 @@ type Props = {
   watermarkText?: string
   antiDownload?: boolean
   aspectRatio?: "16:9" | "4:3" | "1:1" | string
+  onTimeUpdate?: () => void
+  videoRef?: (ref: HTMLVideoElement | null) => void
 }
 
 function isHlsUrl(u: string) {
@@ -47,6 +49,8 @@ export default function SecureVideoPlayer({
   watermarkText = "",
   antiDownload = false,
   aspectRatio = "16:9",
+  onTimeUpdate,
+  videoRef: externalVideoRef,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -125,7 +129,7 @@ export default function SecureVideoPlayer({
 
         if (computed.isHls) {
           // Prefer native HLS (Safari/iOS)
-          if (supportsNativeHls(video)) {
+          if (video && supportsNativeHls(video)) {
             video.src = finalSrc
             await video.load?.()
             return
@@ -144,18 +148,22 @@ export default function SecureVideoPlayer({
               }
             })
             hls.loadSource(finalSrc)
-            hls.attachMedia(video)
+            if (video) hls.attachMedia(video)
             return
           }
           // As last resort, try native element anyway
-          video.src = finalSrc
-          await video.load?.()
+          if (video) {
+            video.src = finalSrc
+            await video.load?.()
+          }
           return
         }
 
         // Non-HLS (MP4)
-        video.src = finalSrc
-        await video.load?.()
+        if (video) {
+          video.src = finalSrc
+          await video.load?.()
+        }
       } catch (err) {
         console.error("Player init error", err)
         setErrorText("Could not initialize the video.")
@@ -171,6 +179,12 @@ export default function SecureVideoPlayer({
       )
     }
     video.addEventListener("error", onError)
+    
+    // إضافة دعم التتبع
+    if (onTimeUpdate) {
+      video.addEventListener("timeupdate", onTimeUpdate)
+    }
+    
     const raf = requestAnimationFrame(() => void setup())
 
     return () => {
@@ -178,6 +192,9 @@ export default function SecureVideoPlayer({
       wrap?.removeEventListener("contextmenu", onCtx)
       video.removeEventListener("dragstart", onDragStart)
       video.removeEventListener("error", onError)
+      if (onTimeUpdate) {
+        video.removeEventListener("timeupdate", onTimeUpdate)
+      }
       cleanupHls()
     }
   }, [computed, antiDownload])
@@ -215,7 +232,10 @@ export default function SecureVideoPlayer({
         />
       ) : (
         <video
-          ref={videoRef}
+          ref={(el) => {
+            videoRef.current = el
+            if (externalVideoRef) externalVideoRef(el)
+          }}
           className="h-full w-full rounded-md object-contain"
           controls
           preload="metadata"

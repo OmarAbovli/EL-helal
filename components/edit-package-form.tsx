@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { updatePackage, VideoPackage } from "@/server/package-actions"
 import { useToast } from "@/hooks/use-toast"
 
@@ -14,9 +15,16 @@ export function EditPackageForm({ pkg, onFinished }: { pkg: VideoPackage, onFini
   const [description, setDescription] = useState(pkg.description ?? "")
   const [price, setPrice] = useState((pkg.price / 100).toString())
   const [thumbnailUrl, setThumbnailUrl] = useState(pkg.thumbnail_url ?? "")
+  const [selectedGrades, setSelectedGrades] = useState<number[]>(pkg.grades ?? [])
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
   const router = useRouter()
+
+  const toggleGrade = (grade: number) => {
+    setSelectedGrades((prev) =>
+      prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]
+    )
+  }
 
   return (
     <form
@@ -29,7 +37,13 @@ export function EditPackageForm({ pkg, onFinished }: { pkg: VideoPackage, onFini
         }
 
         startTransition(async () => {
-          const res = await updatePackage(pkg.id, { name, description, price: priceInCents, thumbnailUrl })
+          const res = await updatePackage(pkg.id, { 
+            name, 
+            description, 
+            price: priceInCents, 
+            thumbnailUrl,
+            grades: selectedGrades.length > 0 ? selectedGrades : undefined
+          })
           if (res?.ok) {
             toast({ title: "Package Updated", description: `The package "${name}" has been successfully updated.` })
             router.refresh()
@@ -78,6 +92,28 @@ export function EditPackageForm({ pkg, onFinished }: { pkg: VideoPackage, onFini
             onChange={(e) => setThumbnailUrl(e.target.value)}
             placeholder="https://example.com/image.png"
             />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Target Grades (Secondary School)</Label>
+        <p className="text-sm text-muted-foreground mb-2">Select which grades can access this package. Leave empty to make it available for all grades.</p>
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((grade) => (
+            <div key={grade} className="flex items-center space-x-2">
+              <Checkbox
+                id={`edit-grade-${grade}`}
+                checked={selectedGrades.includes(grade)}
+                onCheckedChange={() => toggleGrade(grade)}
+              />
+              <label
+                htmlFor={`edit-grade-${grade}`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Grade {grade} Secondary
+              </label>
+            </div>
+          ))}
         </div>
       </div>
 

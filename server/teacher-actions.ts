@@ -23,6 +23,8 @@ type UploadVideoInput = {
   thumbnailUrl?: string
   sourceType: "gdrive" | "youtube" | "vimeo" | "bunny" | "bunny_id"
   directPlayUrl?: string
+  maxWatchCount?: number // عدد المشاهدات المسموح بها (افتراضي 3)
+  watchLimitEnabled?: boolean // تفعيل/تعطيل حد المشاهدات (افتراضي true)
 }
 
 type CreateStudentInput = {
@@ -150,7 +152,10 @@ export async function uploadVideo(input: UploadVideoInput) {
     }
 
     await sql`
-      INSERT INTO videos (id, teacher_id, title, description, grades, url, category, is_free, package_id, thumbnail_url)
+      INSERT INTO videos (
+        id, teacher_id, title, description, grades, url, category, 
+        is_free, package_id, thumbnail_url, max_watch_count, watch_limit_enabled
+      )
       VALUES (
         ${id},
         ${teacherId},
@@ -161,7 +166,9 @@ export async function uploadVideo(input: UploadVideoInput) {
         ${input.category},
         ${input.isFree},
         ${input.packageId},
-        ${input.thumbnailUrl ?? null}
+        ${input.thumbnailUrl ?? null},
+        ${input.maxWatchCount ?? 3},
+        ${input.watchLimitEnabled ?? true}
       );
     `
 

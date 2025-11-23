@@ -12,6 +12,7 @@ export type VideoPackage = {
   description: string | null
   price: number
   thumbnail_url: string | null
+  grades: number[] | null
   created_at: string
 }
 
@@ -20,6 +21,7 @@ type CreatePackageInput = {
   description?: string
   price: number
   thumbnailUrl?: string
+  grades?: number[]
 }
 
 type UpdatePackageInput = {
@@ -27,6 +29,7 @@ type UpdatePackageInput = {
   description?: string
   price?: number
   thumbnailUrl?: string
+  grades?: number[]
 }
 
 async function requireTeacherId() {
@@ -45,14 +48,15 @@ export async function createPackage(input: CreatePackageInput) {
     const id = randomUUID()
 
     await sql`
-      INSERT INTO video_packages (id, teacher_id, name, description, price, thumbnail_url)
+      INSERT INTO video_packages (id, teacher_id, name, description, price, thumbnail_url, grades)
       VALUES (
         ${id},
         ${teacherId},
         ${input.name},
         ${input.description ?? null},
         ${input.price},
-        ${input.thumbnailUrl ?? null}
+        ${input.thumbnailUrl ?? null},
+        ${input.grades && input.grades.length > 0 ? input.grades : null}
       );
     `
     return { ok: true as const, packageId: id }
@@ -72,7 +76,8 @@ export async function updatePackage(packageId: string, updates: UpdatePackageInp
         name = COALESCE(${updates.name}, name),
         description = COALESCE(${updates.description}, description),
         price = COALESCE(${updates.price}, price),
-        thumbnail_url = COALESCE(${updates.thumbnailUrl}, thumbnail_url)
+        thumbnail_url = COALESCE(${updates.thumbnailUrl}, thumbnail_url),
+        grades = CASE WHEN ${updates.grades !== undefined} THEN ${updates.grades && updates.grades.length > 0 ? updates.grades : null} ELSE grades END
       WHERE id = ${packageId} AND teacher_id = ${teacherId}
       RETURNING id;
     `) as any[]
@@ -116,7 +121,7 @@ export async function getTeacherPackages(): Promise<VideoPackage[]> {
   try {
     const teacherId = await requireTeacherId()
     const rows = (await sql`
-      SELECT id, teacher_id, name, description, price, thumbnail_url, created_at
+      SELECT id, teacher_id, name, description, price, thumbnail_url, grades, created_at
       FROM video_packages
       WHERE teacher_id = ${teacherId}
       ORDER BY created_at DESC;
@@ -132,7 +137,7 @@ export async function getPackageById(packageId: string): Promise<VideoPackage | 
   try {
     const teacherId = await requireTeacherId()
     const rows = (await sql`
-      SELECT id, teacher_id, name, description, price, thumbnail_url, created_at
+      SELECT id, teacher_id, name, description, price, thumbnail_url, grades, created_at
       FROM video_packages
       WHERE id = ${packageId} AND teacher_id = ${teacherId};
     `) as any[]

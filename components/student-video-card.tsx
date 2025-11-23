@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import SecureVideoPlayer from '@/components/secure-video-player'
+import ProfessionalVideoPlayer from '@/components/professional-video-player'
 import { Play } from 'lucide-react'
 import { isYouTubeUrl, toYouTubeEmbed } from '@/lib/youtube'
 import { isVimeoUrl, normalizeVimeoInput, extractVimeoEmbedSrc } from '@/lib/vimeo'
@@ -98,12 +98,11 @@ export default function StudentVideoCard({
             />
           </div>
         ) : (
-          <SecureVideoPlayer
-            source={embedSrc}
-            title={title}
+          <ProfessionalVideoPlayer
+            videoId={id}
+            videoUrl={embedSrc}
+            videoTitle={title}
             watermarkText={watermarkText}
-            antiDownload={antiDownload}
-            aspectRatio="16:9"
           />
         )}
       </div>

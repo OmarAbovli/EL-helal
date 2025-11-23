@@ -44,6 +44,8 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
   const [packageId, setPackageId] = useState<string | null>(null)
   const [isFree, setIsFree] = useState(false)
   const [thumbnailUrl, setThumbnailUrl] = useState("")
+  const [maxWatchCount, setMaxWatchCount] = useState(3)
+  const [watchLimitEnabled, setWatchLimitEnabled] = useState(true)
   const [isPending, startTransition] = useTransition()
 
   // Bunny metadata state (Video ID flow)
@@ -119,6 +121,8 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
             thumbnailUrl,
             sourceType,
             directPlayUrl: directPlayUrl || undefined,
+            maxWatchCount,
+            watchLimitEnabled,
           })
           if (res?.ok) {
             toast({
@@ -137,6 +141,8 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
             setIsFree(false)
             setThumbnailUrl("")
             setSourceType("bunny")
+            setMaxWatchCount(3)
+            setWatchLimitEnabled(true)
             setMetaDurationSec(undefined)
             setMetaFetched(false)
           } else {
@@ -325,6 +331,46 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
               />
             </div>
           </>
+        )}
+      </div>
+
+      {/* حقول التحكم في المشاهدات */}
+      <div className="space-y-4 rounded-lg border p-4 bg-muted/50">
+        <h3 className="text-sm font-semibold">Watch Limit Settings</h3>
+        
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="watch-limit">Enable Watch Limit</Label>
+            <p className="text-xs text-muted-foreground">
+              Limit how many times students can watch this video
+            </p>
+          </div>
+          <Switch
+            id="watch-limit"
+            checked={watchLimitEnabled}
+            onCheckedChange={setWatchLimitEnabled}
+          />
+        </div>
+
+        {watchLimitEnabled && (
+          <div className="space-y-2">
+            <Label htmlFor="max-watches">Maximum Watch Count</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="max-watches"
+                type="number"
+                min="1"
+                max="10"
+                value={maxWatchCount}
+                onChange={(e) => setMaxWatchCount(parseInt(e.target.value) || 3)}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">times per student</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A watch is counted when the student views 85% or more of the video
+            </p>
+          </div>
         )}
       </div>
 
