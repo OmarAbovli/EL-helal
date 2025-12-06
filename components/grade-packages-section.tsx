@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BookOpen, GraduationCap, MessageCircle, Sparkles } from "lucide-react"
+import RedeemCodeDialog from "@/components/redeem-code-dialog"
 
 type GradeKey = 1 | 2 | 3
 
@@ -174,11 +175,9 @@ export default function GradePackagesSection() {
                   key={g}
                   type="button"
                   onClick={() => handleSelectGrade(g)}
-                  className={`group relative h-32 sm:h-36 lg:h-40 overflow-hidden rounded-2xl sm:rounded-3xl border border-white/15 bg-gradient-to-br ${
-                    gMeta.accentClass
-                  } p-[1px] shadow-[0_18px_60px_rgba(15,23,42,0.9)] transition-transform duration-500 hover:-translate-y-2 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 ${
-                    isActive ? "scale-[1.02]" : "scale-100 opacity-80"
-                  }`}
+                  className={`group relative h-32 sm:h-36 lg:h-40 overflow-hidden rounded-2xl sm:rounded-3xl border border-white/15 bg-gradient-to-br ${gMeta.accentClass
+                    } p-[1px] shadow-[0_18px_60px_rgba(15,23,42,0.9)] transition-transform duration-500 hover:-translate-y-2 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 ${isActive ? "scale-[1.02]" : "scale-100 opacity-80"
+                    }`}
                 >
                   <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-3xl bg-white/80 dark:bg-slate-950/70 text-center shadow-[0_0_0_1px_rgba(148,163,184,0.25)] backdrop-blur-2xl floating-card">
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(45,212,191,0.35),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(56,189,248,0.35),transparent_55%)] opacity-70" />
@@ -239,59 +238,62 @@ export default function GradePackagesSection() {
                   <Card className="relative flex h-full w-full flex-col overflow-hidden border border-emerald-400/25 bg-gradient-to-br from-emerald-500/15 via-slate-950/85 to-sky-500/15 text-emerald-50 shadow-[0_20px_70px_rgba(6,95,70,0.8)] backdrop-blur-2xl transition-transform duration-500 group-hover:-translate-y-1.5 group-hover:shadow-[0_30px_90px_rgba(6,95,70,0.9)] gap-0 py-0">
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(45,212,191,0.45),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(56,189,248,0.45),transparent_55%)] opacity-70" />
                     <CardContent className="relative flex flex-1 flex-col gap-2.5 sm:gap-3 p-2.5 sm:p-4 lg:p-5">
-                    <div className="flex gap-2 sm:gap-3">
-                      {pkg.thumbnail_url && (
-                        <div className="relative h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 shrink-0 overflow-hidden rounded-xl sm:rounded-2xl border border-emerald-400/40 bg-slate-900/80">
-                          <img
-                            src={pkg.thumbnail_url}
-                            alt={pkg.name}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:gap-1">
-                        <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2 min-w-0 w-full">
-                          <div className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full bg-slate-950/60 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.08em] sm:tracking-[0.12em] text-emerald-100/90 max-w-[65%] sm:max-w-[70%] overflow-hidden">
-                            <span className="shrink-0">{meta.short}</span>
-                            <span className="h-0.5 w-0.5 sm:h-1 sm:w-1 rounded-full bg-emerald-300 shrink-0" />
-                            <span className="hidden sm:inline truncate">English package</span>
-                            <span className="inline sm:hidden truncate">Eng</span>
+                      <div className="flex gap-2 sm:gap-3">
+                        {pkg.thumbnail_url && (
+                          <div className="relative h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 shrink-0 overflow-hidden rounded-xl sm:rounded-2xl border border-emerald-400/40 bg-slate-900/80">
+                            <img
+                              src={pkg.thumbnail_url}
+                              alt={pkg.name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
                           </div>
-                          <div className="rounded-xl bg-slate-950/80 px-1.5 py-0.5 text-right text-[10px] sm:text-[11px] text-emerald-100/90 shadow-inner shrink-0">
-                            <div className="font-semibold leading-tight whitespace-nowrap">{formatPrice(pkg.price)}</div>
-                            <div className="text-[9px] sm:text-[10px] leading-tight text-emerald-100/70 whitespace-nowrap">per package</div>
-                          </div>
-                        </div>
-
-                        <h4 className="mt-0.5 sm:mt-1 text-sm lg:text-base font-semibold text-white leading-snug break-words line-clamp-2">{pkg.name}</h4>
-                        {pkg.description && (
-                          <p className="mt-0.5 text-[11px] lg:text-xs text-emerald-50/80 leading-relaxed break-words line-clamp-3">
-                            {pkg.description}
-                          </p>
                         )}
+
+                        <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:gap-1">
+                          <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2 min-w-0 w-full">
+                            <div className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full bg-slate-950/60 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.08em] sm:tracking-[0.12em] text-emerald-100/90 max-w-[65%] sm:max-w-[70%] overflow-hidden">
+                              <span className="shrink-0">{meta.short}</span>
+                              <span className="h-0.5 w-0.5 sm:h-1 sm:w-1 rounded-full bg-emerald-300 shrink-0" />
+                              <span className="hidden sm:inline truncate">English package</span>
+                              <span className="inline sm:hidden truncate">Eng</span>
+                            </div>
+                            <div className="rounded-xl bg-slate-950/80 px-1.5 py-0.5 text-right text-[10px] sm:text-[11px] text-emerald-100/90 shadow-inner shrink-0">
+                              <div className="font-semibold leading-tight whitespace-nowrap">{formatPrice(pkg.price)}</div>
+                              <div className="text-[9px] sm:text-[10px] leading-tight text-emerald-100/70 whitespace-nowrap">per package</div>
+                            </div>
+                          </div>
+
+                          <h4 className="mt-0.5 sm:mt-1 text-sm lg:text-base font-semibold text-white leading-snug break-words line-clamp-2">{pkg.name}</h4>
+                          {pkg.description && (
+                            <p className="mt-0.5 text-[11px] lg:text-xs text-emerald-50/80 leading-relaxed break-words line-clamp-3">
+                              {pkg.description}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mt-1 sm:mt-1.5 flex flex-wrap items-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-emerald-50/80">
-                      <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Listening</span>
-                      <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Exam practice</span>
-                      <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Grammar</span>
-                    </div>
+                      <div className="mt-1 sm:mt-1.5 flex flex-wrap items-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-emerald-50/80">
+                        <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Listening</span>
+                        <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Exam practice</span>
+                        <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Grammar</span>
+                      </div>
 
-                    <div className="mt-1.5 sm:mt-2 lg:mt-3 flex flex-wrap gap-2">
-                      <Button
-                        asChild
-                        className="inline-flex w-full flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-400 text-xs lg:text-sm font-semibold text-slate-950 shadow-[0_0_0_1px_rgba(15,23,42,0.35)] hover:from-emerald-400 hover:via-teal-300 hover:to-sky-300 hover:text-slate-950 lg:py-2.5"
-                      >
-                        <a href={makeWhatsAppUrl(pkg.name, meta.label)} target="_blank" rel="noreferrer">
-                          <MessageCircle className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
-                          Talk on WhatsApp
-                        </a>
-                      </Button>
-                    </div>
-                  </CardContent>
+                      <div className="mt-1.5 sm:mt-2 lg:mt-3 flex flex-wrap gap-2">
+                        <Button
+                          asChild
+                          className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-400 text-xs lg:text-sm font-semibold text-slate-950 shadow-[0_0_0_1px_rgba(15,23,42,0.35)] hover:from-emerald-400 hover:via-teal-300 hover:to-sky-300 hover:text-slate-950 lg:py-2.5"
+                        >
+                          <a href={makeWhatsAppUrl(pkg.name, meta.label)} target="_blank" rel="noreferrer">
+                            <MessageCircle className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+                            Talk on WhatsApp
+                          </a>
+                        </Button>
+                        <div className="shrink-0">
+                          <RedeemCodeDialog />
+                        </div>
+                      </div>
+                    </CardContent>
                   </Card>
                 </Link>
               ))}

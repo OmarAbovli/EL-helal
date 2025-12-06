@@ -1,20 +1,20 @@
 "use client"
 
 import type React from "react"
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarHeader, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem, 
-  SidebarRail 
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
-import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck, Image } from "lucide-react"
+import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck, Image, Ticket } from "lucide-react"
 
 const items = [
   { title: "لوحة التحكم", href: "/teacher", icon: Gauge },
@@ -22,6 +22,7 @@ const items = [
   { title: "بث مباشر", href: "/teacher/live", icon: Radio },
   { title: "فيديوهاتي", href: "/teacher/videos", icon: Grid2X2 },
   { title: "الباقات", href: "/teacher/packages", icon: Grid2X2 },
+  { title: "أكواد الباقات", href: "/teacher/codes", icon: Ticket },
   { title: "الطلاب", href: "/teacher/students", icon: Users },
   { title: "الصور المنتظرة", href: "/teacher/photos/pending", icon: Image },
   { title: "تسجيل الدخول بـ QR", href: "/teacher/qr-login", icon: QrCode },

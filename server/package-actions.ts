@@ -48,7 +48,7 @@ export async function createPackage(input: CreatePackageInput) {
     const id = randomUUID()
 
     await sql`
-      INSERT INTO video_packages (id, teacher_id, name, description, price, thumbnail_url, grades)
+      INSERT INTO packages (id, teacher_id, name, description, price, thumbnail_url, grades)
       VALUES (
         ${id},
         ${teacherId},
@@ -71,7 +71,7 @@ export async function updatePackage(packageId: string, updates: UpdatePackageInp
     const teacherId = await requireTeacherId()
 
     const rows = (await sql`
-      UPDATE video_packages
+      UPDATE packages
       SET
         name = COALESCE(${updates.name}, name),
         description = COALESCE(${updates.description}, description),
@@ -101,7 +101,7 @@ export async function deletePackage(packageId: string) {
     // For now, we allow deleting it, and videos will have their package_id set to NULL.
 
     const rows = (await sql`
-      DELETE FROM video_packages
+      DELETE FROM packages
       WHERE id = ${packageId} AND teacher_id = ${teacherId}
       RETURNING id;
     `) as any[]
@@ -122,7 +122,7 @@ export async function getTeacherPackages(): Promise<VideoPackage[]> {
     const teacherId = await requireTeacherId()
     const rows = (await sql`
       SELECT id, teacher_id, name, description, price, thumbnail_url, grades, created_at
-      FROM video_packages
+      FROM packages
       WHERE teacher_id = ${teacherId}
       ORDER BY created_at DESC;
     `) as any[]
@@ -138,7 +138,7 @@ export async function getPackageById(packageId: string): Promise<VideoPackage | 
     const teacherId = await requireTeacherId()
     const rows = (await sql`
       SELECT id, teacher_id, name, description, price, thumbnail_url, grades, created_at
-      FROM video_packages
+      FROM packages
       WHERE id = ${packageId} AND teacher_id = ${teacherId};
     `) as any[]
     return (rows[0] as VideoPackage) ?? null

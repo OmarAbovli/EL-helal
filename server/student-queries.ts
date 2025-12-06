@@ -19,7 +19,7 @@ async function getPackageAccessInfo(userId: string, teacherIds: string[]): Promi
 
   const packages = (await sql`
     SELECT id, teacher_id, price
-    FROM video_packages
+    FROM packages
     WHERE teacher_id = ANY(${teacherIds})
   `) as { id: string; teacher_id: string; price: number | null }[]
 
@@ -34,7 +34,7 @@ async function getPackageAccessInfo(userId: string, teacherIds: string[]): Promi
   const purchasedRows = (await sql`
     SELECT p.package_id, vp.teacher_id
     FROM purchases p
-    JOIN video_packages vp ON vp.id = p.package_id
+    JOIN packages vp ON vp.id = p.package_id
     WHERE p.user_id = ${userId} AND p.status = 'paid' AND vp.teacher_id = ANY(${teacherIds})
   `) as { package_id: string; teacher_id: string }[]
 
@@ -300,7 +300,7 @@ export async function getStudentDashboardData(studentId: string, filters: { cate
   // 2. Get all packages from all subscribed teachers
   const allPackages = (await sql`
     SELECT id, name, description, price, thumbnail_url, teacher_id
-    FROM video_packages
+    FROM packages
     WHERE teacher_id = ANY(${teacherIds})
     ORDER BY created_at DESC
   `) as any[]
@@ -342,7 +342,7 @@ export async function getStudentDashboardData(studentId: string, filters: { cate
       const packageVideos = videosByPackage.get(pkg.id) ?? []
       // A package is accessible if it appears in the computed accessible set
       const isAccessible = accessiblePackageIds.has(pkg.id)
-      
+
       teacher.packages.push({
         ...pkg,
         isAccessible,

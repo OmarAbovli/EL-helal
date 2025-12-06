@@ -49,7 +49,7 @@ interface GroqResponse {
 
 async function callGroqAI(messages: GroqMessage[]): Promise<string> {
   // TEMPORARY: Hardcoded API key for testing
-  const apiKey = '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'
+  const apiKey = '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'
   
   console.log('🔑 [API] Using hardcoded API key for testing')
   console.log('🔑 [API] Key length:', apiKey.length)

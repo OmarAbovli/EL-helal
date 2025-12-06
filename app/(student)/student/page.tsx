@@ -19,6 +19,7 @@ import { StudentHeroFX } from "@/components/student-hero-fx"
 import { Button } from "@/components/ui/button"
 import { VideoCategoryFilter } from "@/components/video-category-filter"
 import { PurchasePackageButton } from "@/components/purchase-package-button"
+import RedeemCodeDialog from "@/components/redeem-code-dialog"
 import { ExamCountdown } from "@/components/exam-countdown"
 import { StudentLiveCallBanner } from "@/components/student-live-call-banner"
 
@@ -68,7 +69,7 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
   ])
 
   // Filter active exams only
-  const activeExams = availableExamsResult.success 
+  const activeExams = availableExamsResult.success
     ? (availableExamsResult.exams || []).filter((exam: any) => exam.status === 'active')
     : []
 
@@ -90,11 +91,11 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
               <CardHeader>
                 <CardTitle>Live Now</CardTitle>
                 <CardDescription>
-                  {activeNow.length > 0 && activeExams.length > 0 
+                  {activeNow.length > 0 && activeExams.length > 0
                     ? "Your teacher is live and there are active exams. Join the stream or start your exam."
                     : activeNow.length > 0
-                    ? `Your teacher${activeNow.length > 1 ? "s are" : " is"} live right now. Join the stream.`
-                    : "There are active exams available now. Start your exam."}
+                      ? `Your teacher${activeNow.length > 1 ? "s are" : " is"} live right now. Join the stream.`
+                      : "There are active exams available now. Start your exam."}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -116,7 +117,7 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                       ) : null}
                     </div>
                   ))}
-                  
+
                   {/* Active Exams */}
                   {activeExams.map((exam: any) => (
                     <div
@@ -190,7 +191,10 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                       <p className="text-sm text-muted-foreground mt-1 mb-4">
                         Get access to all videos in this package.
                       </p>
-                      <PurchasePackageButton pkg={pkg} />
+                      <div className="flex flex-wrap gap-2 items-center justify-center">
+                        <PurchasePackageButton pkg={pkg} />
+                        <RedeemCodeDialog />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -221,17 +225,17 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                     <p className="truncate text-xs text-muted-foreground">Teacher: {s.teacher_name}</p>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Starts: {new Date(s.start_at).toLocaleString('ar-EG', { 
+                    Starts: {new Date(s.start_at).toLocaleString('ar-EG', {
                       timeZone: 'Africa/Cairo',
-                      month: 'short', 
-                      day: 'numeric', 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
                     })}
                   </div>
                 </div>
               ))}
-              
+
               {/* Upcoming Exams */}
               {upcomingExams.map((exam: any) => (
                 <div
@@ -249,12 +253,12 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                   <div className="space-y-1">
                     <ExamCountdown scheduledAt={exam.scheduled_at} />
                     <div className="text-xs text-muted-foreground">
-                      {new Date(exam.scheduled_at).toLocaleString('ar-EG', { 
+                      {new Date(exam.scheduled_at).toLocaleString('ar-EG', {
                         timeZone: 'Africa/Cairo',
-                        month: 'short', 
-                        day: 'numeric', 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
                       })}
                     </div>
                   </div>
