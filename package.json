@@ -62,7 +62,7 @@
     "html5-qrcode": "^2.3.8",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
-    "next": "^15.2.5",
+    "next": "^15.2.6",
     "next-themes": "latest",
     "qrcode": "latest",
     "react": "^18.3.1",
