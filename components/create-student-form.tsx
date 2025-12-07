@@ -24,6 +24,7 @@ export function CreateStudentForm({ packages }: { packages: VideoPackage[] }) {
 
   const [creds, setCreds] = useState<{ username: string; password: string } | null>(null)
   const [studentId, setStudentId] = useState<string | null>(null)
+  const [lastSubmitTime, setLastSubmitTime] = useState<number>(0)
 
   function togglePackage(id: string) {
     setPackageIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -34,6 +35,19 @@ export function CreateStudentForm({ packages }: { packages: VideoPackage[] }) {
       onSubmit={(e) => {
         e.preventDefault()
         if (!grade) return
+
+        // منع الإرسال المتكرر: يجب الانتظار ثانيتين بين كل طلب
+        const now = Date.now()
+        if (now - lastSubmitTime < 2000) {
+          toast({
+            title: "Please wait",
+            description: "Wait 2 seconds before creating another student",
+            variant: "destructive"
+          })
+          return
+        }
+
+        setLastSubmitTime(now)
         startTransition(async () => {
           const res = await createStudent({ name, phone, guardianPhone, grade, classification, packageIds })
           if (res?.ok) {

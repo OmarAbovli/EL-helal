@@ -9,7 +9,8 @@ CREATE TABLE student_package_access (
   package_id UUID NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
   teacher_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   granted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  PRIMARY KEY (student_id, package_id)  -- ← المفتاح الأساسي!
+  granted_by TEXT,
+  PRIMARY KEY (student_id, teacher_id, package_id)  -- ← المفتاح الأساسي بثلاثة أعمدة!
 );
 
 -- Indexes

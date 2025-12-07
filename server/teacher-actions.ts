@@ -9,6 +9,7 @@ import { normalizeGoogleDriveUrl, isGoogleDriveUrl } from "@/lib/gdrive"
 import { isYouTubeUrl, toYouTubeEmbed } from "@/lib/youtube"
 import { isVimeoUrl, normalizeVimeoInput } from "@/lib/vimeo"
 import { isBunnyUrl, normalizeBunnyInput, normalizeBunnyDirectPlayUrl, buildBunnyHlsUrl } from "@/lib/bunny"
+import { createQrToken } from "@/server/qr-actions"
 
 export type StudentClassification = "center" | "online"
 
@@ -34,6 +35,29 @@ type CreateStudentInput = {
   grade: number
   classification: StudentClassification
   packageIds?: string[]
+}
+
+type BulkStudentInput = {
+  names: string[]  // Array of student names
+  phone: string    // Same phone for all
+  guardianPhone: string // Same guardian phone for all
+  grade: number
+  classification: StudentClassification
+  packageIds: string[]
+}
+
+type BulkStudentResult = {
+  ok: true
+  students: Array<{
+    id: string
+    name: string
+    username: string
+    password: string
+    qrToken: string
+  }>
+} | {
+  ok: false
+  error: string
 }
 
 type UpdateTeacherSelfInput = {
@@ -259,6 +283,107 @@ export async function createStudent(input: CreateStudentInput) {
     return { ok: false as const, error: e?.message ?? "DB Error" }
   }
 }
+
+export async function createBulkStudents(input: BulkStudentInput): Promise<BulkStudentResult> {
+  try {
+    const teacherId = await requireTeacherId()
+    await cleanupExpiredStudents()
+
+    // Validation
+    if (!input.names || input.names.length === 0) {
+      return { ok: false, error: "No student names provided" }
+    }
+    if (input.names.length > 50) {
+      return { ok: false, error: "Maximum 50 students per batch" }
+    }
+    if (!input.grade || ![1, 2, 3].includes(input.grade)) {
+      return { ok: false, error: "Invalid grade" }
+    }
+
+    const students: Array<{
+      id: string
+      name: string
+      username: string
+      password: string
+      qrToken: string
+    }> = []
+
+    // Create each student
+    for (const name of input.names) {
+      const trimmedName = name.trim()
+      if (!trimmedName) continue // Skip empty names
+
+      const id = "st_" + randomUUID()
+
+      // Generate unique username
+      let attempts = 0
+      let username = randomUsernameStudent()
+      while (attempts < 7) {
+        try {
+          const taken = (await sql`SELECT 1 FROM users WHERE username = ${username} LIMIT 1;`) as any[]
+          if (taken[0]) {
+            attempts++
+            username = randomUsernameStudent()
+            continue
+          }
+          break
+        } catch {
+          break
+        }
+      }
+
+      const password = randomPasswordStudent()
+      const passwordHash = await bcrypt.hash(password, 10)
+
+      // Insert user
+      await sql`
+        INSERT INTO users (id, role, name, phone, guardian_phone, grade, username, password_hash, classification)
+        VALUES (${id}, 'student', ${trimmedName}, ${input.phone}, ${input.guardianPhone}, ${input.grade}, ${username}, ${passwordHash}, ${input.classification});
+      `
+
+      // Create subscription
+      const subId = "sub_" + randomUUID()
+      await sql`
+        INSERT INTO teacher_subscriptions (id, student_id, teacher_id, status)
+        VALUES (${subId}, ${id}, ${teacherId}, 'active')
+        ON CONFLICT DO NOTHING;
+      `
+
+      // Assign packages
+      if (input.packageIds && input.packageIds.length > 0) {
+        for (const pkgId of input.packageIds) {
+          await sql`
+            INSERT INTO student_package_access (student_id, teacher_id, package_id, granted_at, granted_by)
+            VALUES (${id}, ${teacherId}, ${pkgId}, NOW(), 'bulk-create')
+            ON CONFLICT (student_id, teacher_id, package_id) DO NOTHING;
+          `
+        }
+      }
+
+      // Generate QR token (expires in 30 days)
+      const qrToken = randomUUID()
+      await createQrToken({
+        token: qrToken,
+        userId: id,
+        expiresInMinutes: 43200 // 30 days
+      })
+
+      students.push({
+        id,
+        name: trimmedName,
+        username,
+        password,
+        qrToken
+      })
+    }
+
+    return { ok: true, students }
+  } catch (e: any) {
+    console.error("createBulkStudents error", e)
+    return { ok: false, error: e?.message ?? "DB Error" }
+  }
+}
+
 
 export async function updateStudentClassification(studentId: string, classification: StudentClassification) {
   try {

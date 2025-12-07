@@ -412,7 +412,7 @@ export async function redeemPackageCode(code: string): Promise<{
         await sql`
           INSERT INTO student_package_access(student_id, package_id, teacher_id)
         VALUES(${studentId}, ${codeData.packageId}, ${codeData.teacherId})
-          ON CONFLICT(student_id, package_id) DO NOTHING
+          ON CONFLICT(student_id, teacher_id, package_id) DO NOTHING
             `
 
         console.log("✅ Package access granted!")

@@ -14,7 +14,7 @@ import {
   SidebarRail
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
-import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck, Image, Ticket } from "lucide-react"
+import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck, Image, Ticket, UserPlus } from "lucide-react"
 
 const items = [
   { title: "لوحة التحكم", href: "/teacher", icon: Gauge },
@@ -24,6 +24,7 @@ const items = [
   { title: "الباقات", href: "/teacher/packages", icon: Grid2X2 },
   { title: "أكواد الباقات", href: "/teacher/codes", icon: Ticket },
   { title: "الطلاب", href: "/teacher/students", icon: Users },
+  { title: "كروت الطلاب", href: "/teacher/bulk-students", icon: UserPlus },
   { title: "الصور المنتظرة", href: "/teacher/photos/pending", icon: Image },
   { title: "تسجيل الدخول بـ QR", href: "/teacher/qr-login", icon: QrCode },
   { title: "الإعدادات", href: "/teacher/settings", icon: Settings },
