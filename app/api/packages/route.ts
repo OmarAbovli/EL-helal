@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     if (teacherId) {
       rows = (await sql`
         SELECT id, teacher_id, name, description, price, thumbnail_url, grades
-        FROM video_packages
+        FROM packages
         WHERE teacher_id = ${teacherId}
           AND ${gradeCondition}
         ORDER BY created_at ASC;
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     } else {
       rows = (await sql`
         SELECT id, teacher_id, name, description, price, thumbnail_url, grades
-        FROM video_packages
+        FROM packages
         WHERE ${gradeCondition}
         ORDER BY created_at ASC;
       `) as any[]

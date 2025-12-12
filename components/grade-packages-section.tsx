@@ -234,11 +234,14 @@ export default function GradePackagesSection() {
               )}
 
               {activeState.data?.map((pkg) => (
-                <Link key={pkg.id} href={`/packages/${pkg.id}`} className="group block h-full w-full">
-                  <Card className="relative flex h-full w-full flex-col overflow-hidden border border-emerald-400/25 bg-gradient-to-br from-emerald-500/15 via-slate-950/85 to-sky-500/15 text-emerald-50 shadow-[0_20px_70px_rgba(6,95,70,0.8)] backdrop-blur-2xl transition-transform duration-500 group-hover:-translate-y-1.5 group-hover:shadow-[0_30px_90px_rgba(6,95,70,0.9)] gap-0 py-0">
+                <div key={pkg.id} className="h-full w-full">
+                  <Card className="group relative flex h-full w-full flex-col overflow-hidden border border-emerald-400/25 bg-gradient-to-br from-emerald-500/15 via-slate-950/85 to-sky-500/15 text-emerald-50 shadow-[0_20px_70px_rgba(6,95,70,0.8)] backdrop-blur-2xl transition-transform duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_90px_rgba(6,95,70,0.9)] gap-0 py-0">
+                    <Link href={`/packages/${pkg.id}`} className="absolute inset-0 z-0">
+                      <span className="sr-only">View Package {pkg.name}</span>
+                    </Link>
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(45,212,191,0.45),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(56,189,248,0.45),transparent_55%)] opacity-70" />
-                    <CardContent className="relative flex flex-1 flex-col gap-2.5 sm:gap-3 p-2.5 sm:p-4 lg:p-5">
-                      <div className="flex gap-2 sm:gap-3">
+                    <CardContent className="relative z-10 flex flex-1 flex-col gap-2.5 sm:gap-3 p-2.5 sm:p-4 lg:p-5 pointer-events-none">
+                      <div className="flex gap-2 sm:gap-3 pointer-events-auto">
                         {pkg.thumbnail_url && (
                           <div className="relative h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 shrink-0 overflow-hidden rounded-xl sm:rounded-2xl border border-emerald-400/40 bg-slate-900/80">
                             <img
@@ -273,29 +276,29 @@ export default function GradePackagesSection() {
                         </div>
                       </div>
 
-                      <div className="mt-1 sm:mt-1.5 flex flex-wrap items-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-emerald-50/80">
+                      <div className="mt-1 sm:mt-1.5 flex flex-wrap items-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-emerald-50/80 pointer-events-auto">
                         <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Listening</span>
                         <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Exam practice</span>
                         <span className="rounded-full bg-slate-950/70 px-1.5 py-0.5 text-[9px] sm:text-[10px]">Grammar</span>
                       </div>
 
-                      <div className="mt-1.5 sm:mt-2 lg:mt-3 flex flex-wrap gap-2">
+                      <div className="mt-1.5 sm:mt-2 lg:mt-3 flex flex-wrap gap-2 pointer-events-auto">
                         <Button
                           asChild
-                          className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-400 text-xs lg:text-sm font-semibold text-slate-950 shadow-[0_0_0_1px_rgba(15,23,42,0.35)] hover:from-emerald-400 hover:via-teal-300 hover:to-sky-300 hover:text-slate-950 lg:py-2.5"
+                          className="relative z-20 inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-400 text-xs lg:text-sm font-semibold text-slate-950 shadow-[0_0_0_1px_rgba(15,23,42,0.35)] hover:from-emerald-400 hover:via-teal-300 hover:to-sky-300 hover:text-slate-950 lg:py-2.5"
                         >
                           <a href={makeWhatsAppUrl(pkg.name, meta.label)} target="_blank" rel="noreferrer">
                             <MessageCircle className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
                             Talk on WhatsApp
                           </a>
                         </Button>
-                        <div className="shrink-0">
+                        <div className="relative z-20 shrink-0">
                           <RedeemCodeDialog />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                </Link>
+                </div>
               ))}
             </div>
           </div>
