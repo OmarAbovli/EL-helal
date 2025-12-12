@@ -4,9 +4,28 @@ import { sql } from './db'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// Load .env.local manually for Server Actions in Next.js 15
+// Load .env and .env.local manually for Server Actions in Next.js 15
 function loadEnvLocal() {
   try {
+    // Load .env first
+    const envPath = path.resolve(process.cwd(), '.env')
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8')
+      const lines = content.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (trimmed && !trimmed.startsWith('#')) {
+          const [key, ...valueParts] = trimmed.split('=')
+          const value = valueParts.join('=').trim()
+          if (key && value) {
+            process.env[key.trim()] = value
+          }
+        }
+      }
+      console.log('✅ Loaded .env manually')
+    }
+
+    // Then load .env.local (overrides .env)
     const envLocalPath = path.resolve(process.cwd(), '.env.local')
     if (fs.existsSync(envLocalPath)) {
       const content = fs.readFileSync(envLocalPath, 'utf8')
@@ -24,7 +43,7 @@ function loadEnvLocal() {
       console.log('✅ Loaded .env.local manually')
     }
   } catch (error) {
-    console.error('Failed to load .env.local:', error)
+    console.error('Failed to load environment files:', error)
   }
 }
 
@@ -48,16 +67,18 @@ interface GroqResponse {
 }
 
 async function callGroqAI(messages: GroqMessage[]): Promise<string> {
-  // TEMPORARY: Hardcoded API key for testing
-  const apiKey = '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'
-  
-  console.log('🔑 [API] Using hardcoded API key for testing')
-  console.log('🔑 [API] Key length:', apiKey.length)
+  // قراءة المفتاح من متغيرات البيئة وإزالة أي مسافات
+  const apiKey = process.env.GROQ_API_KEY?.trim()
 
   if (!apiKey) {
-    console.error('❌ [API] GROQ_API_KEY is not configured')
-    throw new Error('GROQ_API_KEY is not configured')
+    console.error('❌ [API] GROQ_API_KEY is not configured in environment variables')
+    throw new Error('GROQ_API_KEY is not configured. Please add it to .env file')
   }
+
+  console.log('✅ [API] Using GROQ_API_KEY from environment variables')
+  console.log('🔑 [API] Key length:', apiKey.length)
+  console.log('🔑 [API] Key starts with:', apiKey.substring(0, 10) + '...')
+  console.log('🔑 [API] Key ends with:', '...' + apiKey.substring(apiKey.length - 10))
 
   try {
     console.log('📡 [API] Calling Groq API...')
@@ -105,7 +126,7 @@ export async function startPracticeSession(
 ) {
   console.log('🔧 [Server] Starting practice session for student:', studentId)
   console.log('🔧 [Server] Topic:', topic, 'Mode:', mode)
-  
+
   try {
     console.log('📊 [Server] Inserting session into database...')
     const [session] = await sql`
