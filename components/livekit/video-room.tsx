@@ -15,7 +15,7 @@ import {
 } from "@livekit/components-react"
 import "@livekit/components-styles"
 import { Track } from "livekit-client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { muteParticipant, removeParticipant, endRoom, getCallReport, saveCallStats } from "@/server/livekit-actions"
 
@@ -111,12 +111,95 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
     const room = useRoomContext()
 
     async function handleEndMeeting() {
-        if (!confirm("End meeting for everyone?")) return;
+        if (isRecording) {
+            if (!confirm("Recording is still active! Ending the meeting will stop and save the recording. Continue?")) return;
+            handleStopRecording();
+            // Wait a moment for recording to save
+            await new Promise(r => setTimeout(r, 1500));
+        } else {
+            if (!confirm("End meeting for everyone?")) return;
+        }
+
         setIsEnding(true);
         await endRoom(roomName);
         const res = await getCallReport(roomName);
         if (res.success) setReportData(res.data);
         setIsEnding(false);
+    }
+
+    // -- Recording Logic --
+    const [isRecording, setIsRecording] = useState(false)
+    const [recordingDuration, setRecordingDuration] = useState(0)
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+    const chunksRef = useRef<Blob[]>([])
+    const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+    // Warn on tab close if recording
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isRecording) {
+                e.preventDefault();
+                e.returnValue = ''; // Chrome requires returnValue to be set
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isRecording]);
+
+    async function handleStartRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: { mediaSource: "screen" } as any,
+                audio: true
+            });
+
+            // Also try to get microphone audio to mix in? 
+            // DisplayMedia usually captures system audio. 
+            // Mixing mic + system audio is complex client-side without AudioContext.
+            // For now, simpler is better: Record the meeting screen (which includes remote audio) + local mic?
+            // "screen" usually includes the speaker output (remote participants).
+
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunksRef.current.push(e.data);
+            };
+
+            recorder.onstop = () => {
+                const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `recording-${roomName}-${new Date().toISOString()}.webm`;
+                a.click();
+                URL.revokeObjectURL(url);
+                chunksRef.current = [];
+                setIsRecording(false);
+                if (timerRef.current) clearInterval(timerRef.current);
+
+                // Stop all tracks to stop the "Sharing" indicator
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            recorder.start(1000); // Collect 1s chunks
+            mediaRecorderRef.current = recorder;
+            chunksRef.current = [];
+            setIsRecording(true);
+
+            timerRef.current = setInterval(() => {
+                setRecordingDuration(prev => prev + 1);
+            }, 1000);
+
+        } catch (err) {
+            console.error("Error starting recording:", err);
+            alert("Could not start recording. Please allow screen access.");
+        }
+    }
+
+    function handleStopRecording() {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+        }
     }
 
     // -- Render Report --
@@ -190,7 +273,7 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
                     ) : (
                         <div className="flex-1 p-2 h-full">
                             {screenShareTrack ? (
-                                <FocusLayout focusTrack={screenShareTrack} carouselTracks={tracks.filter(t => t !== screenShareTrack)} />
+                                <FocusLayout trackRef={screenShareTrack} />
                             ) : (
                                 <GridLayout tracks={tracks}>
                                     <ParticipantTile />
@@ -248,6 +331,28 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
                                         >
                                             ✏️ Open Whiteboard
                                         </button>
+                                    </div>
+                                    <hr className="border-neutral-700" />
+                                    <div className="space-y-2">
+                                        <h3 className="text-xs font-bold text-zinc-500 uppercase">Recording</h3>
+                                        {!isRecording ? (
+                                            <button
+                                                onClick={handleStartRecording}
+                                                className="w-full bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 py-3 rounded-lg flex items-center justify-center gap-2 transition-all font-medium"
+                                            >
+                                                🔴 Start Recording
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleStopRecording}
+                                                className="w-full bg-red-600 hover:bg-red-700 text-white border border-red-500 py-3 rounded-lg flex items-center justify-center gap-2 transition-all font-medium animate-pulse"
+                                            >
+                                                ⏹ Stop Recording ({recordingDuration}s)
+                                            </button>
+                                        )}
+                                        <p className="text-[10px] text-zinc-500 text-center">
+                                            Recording saves to your device automatically.
+                                        </p>
                                     </div>
                                     <hr className="border-neutral-700" />
                                     <div className="space-y-2">
