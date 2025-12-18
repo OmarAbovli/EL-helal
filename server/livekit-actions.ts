@@ -24,7 +24,7 @@ export async function createLiveKitToken(roomName: string, participantName: stri
     at.addGrant({
         roomJoin: true,
         room: roomName,
-        canPublish: role === "host", // Only host can publish initially (can be changed via component)
+        canPublish: true, // Allow everyone to publish (Mic/Camera)
         canSubscribe: true,
         canPublishData: true,
     })
