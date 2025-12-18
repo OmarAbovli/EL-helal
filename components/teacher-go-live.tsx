@@ -105,47 +105,49 @@ export function TeacherGoLive({ packages }: { packages: VideoPackage[] }) {
   }
 
   return (
-    <div className="grid gap-4">
+
+    <div className="grid gap-6">
       <div className="flex items-center justify-between">
-        <div className="grid">
-          <span className="text-sm font-medium">Status</span>
-          <span className="text-xs text-muted-foreground">
-            {loaded ? "Live status updates instantly for your students." : "Loading status..."}
+        <div className="grid gap-1">
+          <span className="text-sm font-medium text-slate-200">Live Status</span>
+          <span className="text-xs text-slate-500">
+            {loaded ? "Updates instantly for students." : "Loading..."}
           </span>
         </div>
-        <Badge variant={isActive ? "default" : "outline"} className={isActive ? "bg-emerald-600" : ""}>
-          {isActive ? "Active" : "Inactive"}
+        <Badge variant={isActive ? "default" : "outline"} className={isActive ? "bg-emerald-600 hover:bg-emerald-700 text-white border-0 px-3 py-1" : "text-slate-400 border-slate-700"}>
+          {isActive ? "Active Live" : "Offline"}
         </Badge>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="live-title">Title (optional)</Label>
+      <div className="space-y-3">
+        <Label htmlFor="live-title" className="text-slate-300">Session Title</Label>
         <Input
           id="live-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Q&A: Algebra — Chapter 3"
+          placeholder="e.g. Q&A: Algebra — Chapter 3"
+          className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-600 focus-visible:ring-indigo-500/50"
         />
       </div>
 
-      <div className="space-y-2">
-        <Label>Stream Type</Label>
-        <div className="flex bg-slate-100 p-1 rounded-lg gap-1">
+      <div className="space-y-3">
+        <Label className="text-slate-300">Stream Platform</Label>
+        <div className="flex bg-slate-900 p-1.5 rounded-lg gap-1 border border-slate-800">
           <button
             onClick={() => setStreamType('external')}
-            className={`flex-1 py-1.5 text-sm rounded-md transition-all ${streamType === 'external' ? 'bg-white shadow text-slate-900 font-medium' : 'text-slate-500 hover:bg-slate-200'}`}
+            className={`flex-1 py-2 text-sm rounded-md transition-all font-medium ${streamType === 'external' ? 'bg-slate-800 text-white shadow-sm ring-1 ring-white/10' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'}`}
           >
             External Link
           </button>
           <button
             onClick={() => setStreamType('jitsi')}
-            className={`flex-1 py-1.5 text-sm rounded-md transition-all ${streamType === 'jitsi' ? 'bg-white shadow text-emerald-700 font-medium' : 'text-slate-500 hover:bg-slate-200'}`}
+            className={`flex-1 py-2 text-sm rounded-md transition-all font-medium ${streamType === 'jitsi' ? 'bg-[#0074e0]/20 text-[#40b1ff] shadow-sm ring-1 ring-[#0074e0]/30' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'}`}
           >
             Jitsi Meet
           </button>
           <button
             onClick={() => setStreamType('livekit')}
-            className={`flex-1 py-1.5 text-sm rounded-md transition-all ${streamType === 'livekit' ? 'bg-white shadow text-indigo-700 font-medium' : 'text-slate-500 hover:bg-slate-200'}`}
+            className={`flex-1 py-2 text-sm rounded-md transition-all font-medium ${streamType === 'livekit' ? 'bg-indigo-500/20 text-indigo-400 shadow-sm ring-1 ring-indigo-500/30' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'}`}
           >
             LiveKit Cloud
           </button>
@@ -153,60 +155,84 @@ export function TeacherGoLive({ packages }: { packages: VideoPackage[] }) {
       </div>
 
       {streamType === 'external' && (
-        <div className="space-y-2">
-          <Label htmlFor="live-url">Live link (Zoom, YouTube, etc.)</Label>
-          <Input id="live-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." />
-          <p className="text-xs text-muted-foreground">
-            Paste any join URL. Students will get a “Live Now” banner with this link.
+        <div className="space-y-3">
+          <Label htmlFor="live-url" className="text-slate-300">Join URL</Label>
+          <Input
+            id="live-url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Paste Zoom or YouTube link..."
+            className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-600 focus-visible:ring-indigo-500/50"
+          />
+          <p className="text-xs text-slate-500">
+            Students will see a "Join Live" banner redirecting to this URL.
           </p>
         </div>
       )}
 
       {streamType !== 'external' && (
-        <div className="p-3 bg-slate-50 border rounded-lg text-sm text-slate-600">
-          {streamType === 'jitsi' ? (
-            <p>A <strong>Jitsi Meet</strong> room will be created automatically. You will be redirected to join as a moderator.</p>
-          ) : (
-            <p>A <strong>LiveKit</strong> room will be created automatically. You will be redirected to the broadcasting page.</p>
-          )}
+        <div className={`p-4 rounded-xl border text-sm flex items-start gap-3 ${streamType === 'jitsi' ? 'bg-[#0074e0]/5 border-[#0074e0]/20 text-blue-200' : 'bg-indigo-500/5 border-indigo-500/20 text-indigo-200'}`}>
+          <div className="mt-0.5">ℹ️</div>
+          <div>
+            {streamType === 'jitsi' ? (
+              <p>A secure <strong>Jitsi Meet</strong> room will be created. You'll be redirected to join as Moderator.</p>
+            ) : (
+              <p>A high-quality <strong>LiveKit</strong> session will start. You'll be redirected to the broadcast dashboard.</p>
+            )}
+          </div>
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label>Target Grades (optional)</Label>
-        <div className="flex gap-4">
+      <div className="space-y-3">
+        <Label className="text-slate-300">Target Grades</Label>
+        <div className="flex gap-6">
           {[1, 2, 3].map((g) => (
             <div key={g} className="flex items-center gap-2">
-              <Checkbox checked={grades.includes(g)} onCheckedChange={() => toggleGrade(g)} id={`go-live-grade-${g}`} />
-              <Label htmlFor={`go-live-grade-${g}`}>Grade {g}</Label>
+              <Checkbox
+                checked={grades.includes(g)}
+                onCheckedChange={() => toggleGrade(g)}
+                id={`go-live-grade-${g}`}
+                className="border-slate-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+              />
+              <Label htmlFor={`go-live-grade-${g}`} className="text-slate-400 font-normal cursor-pointer hover:text-slate-200">Grade {g}</Label>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Restrict to Packages (optional)</Label>
-        <div className="flex flex-wrap gap-2">
-          {packages.map((p) => (
-            <label key={p.id} className="flex items-center gap-1 text-xs">
+      <div className="space-y-3">
+        <Label className="text-slate-300">Access Control (Packages)</Label>
+        <div className="flex flex-wrap gap-3 p-4 bg-slate-900/50 border border-slate-800 rounded-xl">
+          {packages.length > 0 ? packages.map((p) => (
+            <label key={p.id} className="flex items-center gap-2 text-xs bg-slate-800/50 hover:bg-slate-800 px-3 py-1.5 rounded-full cursor-pointer transition-colors border border-transparent hover:border-slate-700">
               <Checkbox
                 checked={selectedPackageIds.includes(p.id)}
                 onCheckedChange={() => togglePackage(p.id)}
+                className="w-3.5 h-3.5 border-slate-500 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
               />
-              <span>{p.name}</span>
+              <span className="text-slate-300">{p.name}</span>
             </label>
-          ))}
+          )) : (
+            <p className="text-xs text-slate-500 italic">No packages found. Stream will be public to selected grades.</p>
+          )}
         </div>
       </div>
 
-      {/* Legacy Provider Selection (Removed in favor of Stream Type above) */}
-
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={activate} disabled={isPending}>
-          {isPending && !isActive ? "Starting..." : "Activate Stream"}
+      <div className="flex gap-3 pt-2">
+        <Button
+          onClick={activate}
+          disabled={isPending}
+          className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-5"
+        >
+          {isPending && !isActive ? "Starting..." : "Start Live Stream"}
         </Button>
-        <Button variant="outline" onClick={stop} disabled={isPending || !isActive}>
-          {isPending && isActive ? "Stopping..." : "Stop Live"}
+        <Button
+          variant="outline"
+          onClick={stop}
+          disabled={isPending || !isActive}
+          className="flex-1 border-slate-700 text-slate-300 hover:bg-red-950/30 hover:text-red-400 hover:border-red-900/50 py-5"
+        >
+          {isPending && isActive ? "Stopping..." : "Stop Stream"}
         </Button>
       </div>
     </div>

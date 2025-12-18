@@ -7,11 +7,17 @@ import {
     ParticipantTile,
     RoomAudioRenderer,
     useTracks,
+    useParticipants,
+    useRoomContext,
+    Chat,
+    FocusLayout,
+    CarouselLayout,
 } from "@livekit/components-react"
-import { Track } from "livekit-client" // Keep this for type imports if needed, but the main UI is from @livekit/components-react
 import "@livekit/components-styles"
+import { Track } from "livekit-client"
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { muteParticipant, removeParticipant, endRoom, getCallReport, saveCallStats } from "@/server/livekit-actions"
 
 export function VideoRoom({ userId, userName }: { userId?: string, userName?: string }) {
     const router = useRouter()
@@ -22,11 +28,6 @@ export function VideoRoom({ userId, userName }: { userId?: string, userName?: st
     // State for token
     const [token, setToken] = useState("")
     const [error, setError] = useState("")
-
-    // Analytics state (for local tracking)
-    // In a real app, each client tracks their own stats and sends pings, 
-    // but for simplicity, the Host can rely on LiveKit events for *everyone* or we just track local.
-    // Better approach: User tracks themselves and reports on disconnect.
 
     useEffect(() => {
         (async () => {
@@ -54,9 +55,6 @@ export function VideoRoom({ userId, userName }: { userId?: string, userName?: st
             <div className="flex flex-col items-center justify-center h-screen bg-slate-950 text-white gap-4">
                 <h2 className="text-xl font-bold text-red-500">Connection Failed</h2>
                 <p className="text-slate-400">{error}</p>
-                <p className="text-sm text-slate-500 max-w-md text-center">
-                    If you just added keys to .env, please <strong>restart your terminal</strong> (npm run dev).
-                </p>
             </div>
         )
     }
@@ -76,7 +74,7 @@ export function VideoRoom({ userId, userName }: { userId?: string, userName?: st
             token={token}
             serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
             data-lk-theme="default"
-            style={{ height: "100vh" }}
+            style={{ height: "100vh", backgroundColor: "#0a0a0a" }}
             onDisconnected={() => window.close()}
         >
             <VideoConferenceWithTools
@@ -89,21 +87,16 @@ export function VideoRoom({ userId, userName }: { userId?: string, userName?: st
     )
 }
 
-import {
-    useParticipants,
-    useRoomContext,
-    ParticipantLoop,
-    ParticipantName,
-    TrackReferenceOrPlaceholder,
-    ConnectionStateToast,
-} from "@livekit/components-react"
-import { muteParticipant, removeParticipant, endRoom, getCallReport, saveCallStats } from "@/server/livekit-actions"
-
 function VideoConferenceWithTools({ role, roomName, userId }: { role: string | null, roomName: string, userId: string }) {
     const [showWhiteboard, setShowWhiteboard] = useState(false)
     const [reportData, setReportData] = useState<any>(null)
     const [isEnding, setIsEnding] = useState(false)
 
+    // UI State
+    const [activeSidebarTab, setActiveSidebarTab] = useState<'chat' | 'participants' | 'controls'>('chat')
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+
+    // Tracks
     const tracks = useTracks(
         [
             { source: Track.Source.Camera, withPlaceholder: true },
@@ -111,166 +104,182 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
         ],
         { onlySubscribed: false },
     )
+
+    // Identify if there is a screen share to toggle Focus Mode
+    const screenShareTrack = tracks.find(t => t.source === Track.Source.ScreenShare);
+
     const room = useRoomContext()
 
-    // Local tracking of speaking time (Active Speaking detection)
-    useEffect(() => {
-        if (!userId) return;
-
-        const interval = setInterval(async () => {
-            // Ideally we check if *local* participant is speaking
-            // But LiveKit 'isSpeaking' is event based. 
-            // Simplification: We will rely on server-side tracking if we had it, 
-            // but here we can just ping the server "I am alive/present" every minute which counts as attendance duration.
-            // For "Speaking Duration", we need to listen to ActiveSpeaker events.
-            // Let's implement a basic "I'm still here" ping for mic duration or similar if needed.
-            // For now, we will skip complex client-side timers to avoid performance issues, 
-            // and focus on the "End Meeting" report which pulls existing DB data.
-        }, 10000);
-
-        return () => clearInterval(interval);
-    }, [userId]);
-
     async function handleEndMeeting() {
-        if (!confirm("End meeting and view report?")) return;
+        if (!confirm("End meeting for everyone?")) return;
         setIsEnding(true);
-
-        // 1. End the room properly
         await endRoom(roomName);
-
-        // 2. Fetch the report
         const res = await getCallReport(roomName);
-        if (res.success) {
-            setReportData(res.data);
-        } else {
-            alert("Failed to generate report");
-        }
+        if (res.success) setReportData(res.data);
         setIsEnding(false);
     }
 
+    // -- Render Report --
     if (reportData) {
         return (
-            <div className="flex flex-col h-full bg-slate-900 text-white p-8 overflow-y-auto">
+            <div className="flex flex-col h-full bg-slate-950 text-white p-8 overflow-y-auto">
                 <div className="max-w-4xl mx-auto w-full space-y-6">
-                    <h1 className="text-3xl font-bold text-emerald-400">📊 Session Report</h1>
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-3xl font-bold text-emerald-500">📊 Session Report</h1>
+                        <button onClick={() => window.close()} className="text-slate-400 hover:text-white bg-slate-800 px-4 py-2 rounded">✕ Close</button>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-slate-800 p-4 rounded-lg">
-                            <h3 className="text-slate-400 text-sm uppercase">Total Attendance</h3>
-                            <p className="text-4xl font-mono">{reportData.participants.length}</p>
+                        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+                            <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Total Attendance</h3>
+                            <p className="text-5xl font-bold text-white">{reportData.participants.length}</p>
                         </div>
-                        <div className="bg-slate-800 p-4 rounded-lg">
-                            <h3 className="text-slate-400 text-sm uppercase">Absent Students</h3>
-                            <p className="text-4xl font-mono text-red-400">{reportData.absentStudents.length}</p>
+                        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+                            <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Absent Students</h3>
+                            <p className="text-5xl font-bold text-red-500">{reportData.absentStudents.length}</p>
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <h3 className="text-xl font-semibold">✅ Present Students</h3>
-                        <div className="bg-slate-800 rounded-lg overflow-hidden">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-slate-700">
-                                    <tr>
-                                        <th className="p-3">Name</th>
-                                        <th className="p-3">Joined At</th>
-                                        <th className="p-3">Spoke For</th>
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                        <div className="p-4 border-b border-slate-800 font-bold">✅ Present Students</div>
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-800/50">
+                                <tr><th className="p-4 text-slate-400">Name</th><th className="p-4 text-slate-400">Joined</th><th className="p-4 text-slate-400">Speaking Time</th></tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800">
+                                {reportData.participants.map((p: any) => (
+                                    <tr key={p.id} className="hover:bg-slate-800/50 transition-colors">
+                                        <td className="p-4 font-medium flex items-center gap-3">
+                                            {p.avatar_url ? <img src={p.avatar_url} className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs">{p.name?.[0]}</div>}
+                                            {p.name}
+                                        </td>
+                                        <td className="p-4 text-slate-400">{new Date(p.joined_at).toLocaleTimeString()}</td>
+                                        <td className="p-4 font-mono text-emerald-400">{p.speaking_duration_seconds || 0}s</td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-700">
-                                    {reportData.participants.map((p: any) => (
-                                        <tr key={p.id} className="hover:bg-slate-700/50">
-                                            <td className="p-3 flex items-center gap-2">
-                                                {p.avatar_url && <img src={p.avatar_url} className="w-6 h-6 rounded-full" />}
-                                                {p.name}
-                                                {p.role === 'teacher' && <span className="bg-indigo-500 text-xs px-1 rounded ml-2">Teacher</span>}
-                                            </td>
-                                            <td className="p-3 text-slate-300">{new Date(p.joined_at).toLocaleTimeString()}</td>
-                                            <td className="p-3 font-mono">{p.speaking_duration_seconds || 0}s</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {reportData.absentStudents.length > 0 && (
-                        <div className="space-y-2">
-                            <h3 className="text-xl font-semibold text-red-300">❌ Absent Students</h3>
-                            <div className="bg-slate-800/50 rounded-lg p-4 grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {reportData.absentStudents.map((s: any) => (
-                                    <div key={s.id} className="flex items-center gap-2 text-slate-400 text-sm">
-                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                        {s.name}
-                                    </div>
                                 ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <button
-                        onClick={() => window.close()}
-                        className="w-full bg-slate-700 hover:bg-slate-600 py-4 rounded-lg font-bold mt-8"
-                    >
-                        Close Report
-                    </button>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="relative h-full w-full flex flex-col">
-            <div className="flex-1 flex overflow-hidden">
-                {showWhiteboard ? (
-                    <div className="flex-1 bg-white relative">
-                        <iframe
-                            src="https://www.tldraw.com/r/el-helal-whiteboard"
-                            className="w-full h-full border-0"
-                            title="Whiteboard"
-                        />
-                        <button
-                            onClick={() => setShowWhiteboard(false)}
-                            className="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700"
-                        >
-                            Close Whiteboard
-                        </button>
-                    </div>
-                ) : (
-                    <GridLayout tracks={tracks}>
-                        <ParticipantTile />
-                    </GridLayout>
-                )}
+        <div className="relative h-full w-full bg-black flex flex-col overflow-hidden text-neutral-200 font-sans">
+            {/* Main Content Area */}
+            <div className="flex-1 flex overflow-hidden relative">
 
-                {role === 'host' && (
-                    <div className="w-80 bg-slate-900 border-l border-slate-700 flex flex-col">
-                        <div className="p-4 border-b border-slate-700 font-bold text-white">Teacher Controls</div>
-
-                        <div className="p-4 space-y-2">
+                {/* 1. Stage (Video/Whiteboard) */}
+                <div className="flex-1 relative flex flex-col min-w-0 bg-neutral-950">
+                    {showWhiteboard ? (
+                        <div className="flex-1 bg-white relative">
+                            {/* Use room-specific URL to avoid 'Room not found' */}
+                            <iframe
+                                src={`https://www.tldraw.com/r/el-helal-${roomName}`}
+                                className="w-full h-full border-0"
+                                title="Whiteboard"
+                            />
                             <button
-                                onClick={() => setShowWhiteboard(true)}
-                                className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 flex items-center justify-center gap-2"
+                                onClick={() => setShowWhiteboard(false)}
+                                className="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-red-700 z-50 pointer-events-auto text-sm font-bold"
                             >
-                                <span>✏️</span> Open Whiteboard
-                            </button>
-
-                            <button
-                                onClick={handleEndMeeting}
-                                disabled={isEnding}
-                                className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                <span>{isEnding ? "Generating..." : "⛔ End Meeting & Report"}</span>
+                                Close Whiteboard
                             </button>
                         </div>
+                    ) : (
+                        <div className="flex-1 p-2 h-full">
+                            {screenShareTrack ? (
+                                <FocusLayout focusTrack={screenShareTrack} carouselTracks={tracks.filter(t => t !== screenShareTrack)} />
+                            ) : (
+                                <GridLayout tracks={tracks}>
+                                    <ParticipantTile />
+                                </GridLayout>
+                            )}
+                        </div>
+                    )}
+                </div>
 
-                        <div className="flex-1 overflow-y-auto p-2">
-                            <div className="text-xs text-slate-400 uppercase font-semibold mb-2 px-2">Participants</div>
-                            <ParticipantList role={role} roomName={roomName} />
+                {/* 2. Sidebar (Zoom-style) */}
+                {isSidebarOpen && (
+                    <div className="w-80 bg-[#1c1c1e] border-l border-neutral-800 flex flex-col shadow-2xl z-20">
+                        {/* Tabs */}
+                        <div className="flex border-b border-neutral-700 bg-[#2c2c2e]">
+                            <button
+                                onClick={() => setActiveSidebarTab('chat')}
+                                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wide transition-colors ${activeSidebarTab === 'chat' ? 'text-white border-b-2 border-indigo-500 bg-[#3a3a3c]' : 'text-zinc-400 hover:text-zinc-200'}`}
+                            >Chat</button>
+                            <button
+                                onClick={() => setActiveSidebarTab('participants')}
+                                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wide transition-colors ${activeSidebarTab === 'participants' ? 'text-white border-b-2 border-indigo-500 bg-[#3a3a3c]' : 'text-zinc-400 hover:text-zinc-200'}`}
+                            >Participants</button>
+                            {role === 'host' && (
+                                <button
+                                    onClick={() => setActiveSidebarTab('controls')}
+                                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-wide transition-colors ${activeSidebarTab === 'controls' ? 'text-white border-b-2 border-indigo-500 bg-[#3a3a3c]' : 'text-zinc-400 hover:text-zinc-200'}`}
+                                >Controls</button>
+                            )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-auto bg-[#1c1c1e]">
+                            {activeSidebarTab === 'chat' && (
+                                <div className="h-full flex flex-col">
+                                    {/* LiveKit Chat Component */}
+                                    {/* We wrap it to style it or just use it directly if supported */}
+                                    <Chat style={{ flex: 1, width: '100%' }} />
+                                </div>
+                            )}
+
+                            {activeSidebarTab === 'participants' && (
+                                <div className="p-2 space-y-2">
+                                    <div className="text-xs font-bold text-zinc-500 uppercase px-2 py-2">In This Call</div>
+                                    <ParticipantList role={role} roomName={roomName} />
+                                </div>
+                            )}
+
+                            {activeSidebarTab === 'controls' && role === 'host' && (
+                                <div className="p-4 space-y-6">
+                                    <div className="space-y-2">
+                                        <h3 className="text-xs font-bold text-zinc-500 uppercase">Interactive</h3>
+                                        <button
+                                            onClick={() => setShowWhiteboard(true)}
+                                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all font-medium"
+                                        >
+                                            ✏️ Open Whiteboard
+                                        </button>
+                                    </div>
+                                    <hr className="border-neutral-700" />
+                                    <div className="space-y-2">
+                                        <h3 className="text-xs font-bold text-zinc-500 uppercase">Session Management</h3>
+                                        <button
+                                            onClick={handleEndMeeting}
+                                            className="w-full bg-red-600/10 text-red-500 border border-red-600/50 py-3 rounded-lg hover:bg-red-600 hover:text-white flex items-center justify-center gap-2 transition-all font-medium"
+                                        >
+                                            ⛔ End Meeting For All
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
 
-            <ControlBar />
+            {/* 3. Bottom Control Bar */}
+            <div className="bg-[#1c1c1e] border-t border-neutral-800 p-3 flex justify-center items-center relative gap-4">
+                <ControlBar
+                    variation="minimal"
+                    controls={{ screenShare: true, chat: false, leave: true, camera: true, microphone: true }}
+                />
+
+                <button
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className={`ml-4 px-3 py-2 rounded text-sm font-medium ${isSidebarOpen ? 'bg-indigo-600 text-white' : 'bg-neutral-800 text-zinc-400 hover:bg-neutral-700'}`}
+                >
+                    {isSidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+                </button>
+            </div>
         </div>
     )
 }
@@ -281,40 +290,47 @@ function ParticipantList({ role, roomName }: { role: string | null, roomName: st
     return (
         <div className="space-y-1">
             {participants.map(p => (
-                <div key={p.identity} className="flex items-center justify-between bg-slate-800 p-2 rounded">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <span className="text-sm text-white truncate max-w-[120px]">
-                            {p.identity} {p.isLocal && "(You)"}
-                        </span>
+                <div key={p.identity} className="flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors group">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${p.isSpeaking ? 'bg-green-600 text-white ring-2 ring-green-400' : 'bg-neutral-700 text-neutral-300'}`}>
+                            {p.name?.[0]?.toUpperCase() || p.identity?.[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm text-neutral-200 truncate max-w-[120px] font-medium">
+                                {p.identity}
+                            </span>
+                            {p.isLocal && <span className="text-[10px] text-zinc-500">You</span>}
+                        </div>
                     </div>
 
-                    {!p.isLocal && role === 'host' && (
-                        <div className="flex gap-1">
-                            <button
-                                onClick={async () => {
-                                    // Mute all tracks for this user
-                                    p.audioTrackPublications.forEach(async (t) => {
-                                        if (t.trackSid) await muteParticipant(roomName, p.identity, t.trackSid, true)
-                                    })
-                                }}
-                                className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded hover:bg-slate-600"
-                                title="Mute Audio"
-                            >
-                                🎤🚫
-                            </button>
-                            <button
-                                onClick={async () => {
-                                    if (confirm(`Kick ${p.identity}?`)) {
-                                        await removeParticipant(roomName, p.identity)
-                                    }
-                                }}
-                                className="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded hover:bg-red-900"
-                                title="Kick"
-                            >
-                                ❌
-                            </button>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {p.isSpeaking && <span className="text-xs">🔊</span>}
+
+                        {!p.isLocal && role === 'host' && (
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => {
+                                        p.audioTrackPublications.forEach(async (t) => {
+                                            if (t.trackSid) await muteParticipant(roomName, p.identity, t.trackSid, true)
+                                        })
+                                    }}
+                                    className="w-7 h-7 flex items-center justify-center rounded bg-zinc-800 hover:bg-red-500 hover:text-white text-zinc-400 transition-colors"
+                                    title="Mute"
+                                >
+                                    🔇
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (confirm(`Kick ${p.identity}?`)) await removeParticipant(roomName, p.identity)
+                                    }}
+                                    className="w-7 h-7 flex items-center justify-center rounded bg-zinc-800 hover:bg-red-600 hover:text-white text-zinc-400 transition-colors"
+                                    title="Kick"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             ))}
         </div>

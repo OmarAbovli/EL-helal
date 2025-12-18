@@ -153,3 +153,44 @@ export async function getCallReport(roomName: string) {
         return { success: false, error: e.message }
     }
 }
+
+export async function getTeacherCallHistory() {
+    const apiKey = process.env.LIVEKIT_API_KEY
+    const apiSecret = process.env.LIVEKIT_API_SECRET
+    const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
+
+    if (!apiKey || !apiSecret || !wsUrl) return { success: false, error: "Missing keys" }
+
+    // Use RoomServiceClient to get active rooms if needed, but for history we rely on DB
+    try {
+        const { getCurrentUser } = await import("@/lib/auth")
+        const { cookies } = await import("next/headers")
+
+        const cookieStore = await cookies()
+        const sessionId = cookieStore.get("session_id")?.value
+        const user = await getCurrentUser(sessionId)
+
+        if (!user || user.role !== 'teacher') return { success: false, error: "Unauthorized" }
+
+        const calls = await sql`
+            SELECT 
+                vc.id, 
+                vc.room_name, 
+                vc.grade, 
+                vc.started_at, 
+                vc.ended_at,
+                COUNT(vcp.id) as participant_count
+            FROM voice_calls vc
+            LEFT JOIN voice_call_participants vcp ON vcp.call_id = vc.id
+            WHERE vc.started_by = ${user.id} 
+              AND vc.status = 'ended'
+            GROUP BY vc.id
+            ORDER BY vc.started_at DESC
+         `
+
+        return { success: true, calls }
+    } catch (e: any) {
+        console.error("Failed to get history", e)
+        return { success: false, error: e.message }
+    }
+}
