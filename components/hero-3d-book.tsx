@@ -10,9 +10,10 @@ export function Hero3DBook({
   secondaryHref?: string
 }) {
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-hidden z-0" suppressHydrationWarning>
       {/* Dual-theme background */}
-      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+        {/* Light Mode: Sunlight / Warmth */}
         <div
           className="h-full w-full dark:hidden"
           style={{
@@ -20,16 +21,33 @@ export function Hero3DBook({
               "radial-gradient(1200px 500px at 20% 10%, rgba(16,185,129,0.18), transparent 60%), radial-gradient(1200px 500px at 80% 20%, rgba(45,212,191,0.18), transparent 60%), linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%)",
           }}
         />
-        <div
-          className="hidden h-full w-full dark:block"
-          style={{
-            background:
-              "radial-gradient(1200px 500px at 20% 10%, rgba(2,6,23,0.10), transparent 60%), radial-gradient(1200px 500px at 80% 20%, rgba(11,18,32,0.10), transparent 60%), linear-gradient(180deg, #020617 0%, #0b1220 100%)",
-          }}
-        />
+
+        {/* Dark Mode: Navy Night + Glowing Moon */}
+        <div className="hidden h-full w-full dark:block relative overflow-hidden">
+          {/* The Moon Source - FORCED Z-INDEX and COLOR */}
+          <div
+            className="absolute top-16 right-[15%] h-32 w-32 rounded-full bg-blue-50 shadow-[0_0_150px_80px_rgba(56,189,248,0.25)] animate-pulse z-20"
+            data-no-bg-compat="true"
+            suppressHydrationWarning
+          >
+            {/* Crater/Texture */}
+            <div
+              className="absolute inset-0 rounded-full bg-slate-200/50 blur-md"
+              data-no-bg-compat="true"
+            ></div>
+          </div>
+
+          {/* Ambient Navy Glow originating from Moon */}
+          <div
+            className="absolute inset-0 z-10"
+            style={{
+              background: "radial-gradient(circle at 80% 15%, rgba(30, 58, 138, 0.3), transparent 60%), linear-gradient(180deg, transparent 0%, rgba(2,6,23,0) 100%)"
+            }}
+          />
+        </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 md:grid-cols-[1.2fr_1fr]">
+      <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 md:grid-cols-[1.2fr_1fr] relative z-30">
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-[11px] text-foreground/80 shadow-sm backdrop-blur">
             Built for curious minds — from first day to finals

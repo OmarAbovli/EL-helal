@@ -29,17 +29,30 @@ export default function BackgroundCompat() {
       if (!likelyFullscreen) return false
 
       // Has a non-transparent solid background (no gradient/image)
-      const hasSolidBg =
-        style.backgroundImage === "none" &&
-        style.backgroundColor !== "rgba(0, 0, 0, 0)" &&
-        style.backgroundColor !== "transparent"
+      const bgColor = style.backgroundColor
+      if (bgColor === "transparent" || bgColor === "rgba(0, 0, 0, 0)") return false
 
+      // Check alpha channel to avoid zapping semi-transparent overlays like play buttons (bg-black/50)
+      // Format is usually rgb(r, g, b) or rgba(r, g, b, a)
+      if (bgColor.startsWith("rgba(")) {
+        const parts = bgColor.match(/[\d.]+/g)
+        if (parts && parts.length >= 4) {
+          const alpha = parseFloat(parts[3])
+          // If it's already significantly transparent, leave it alone.
+          if (alpha < 0.9) return false
+        }
+      }
+
+      const hasSolidBg = style.backgroundImage === "none"
       return hasSolidBg
     }
 
     const neutralize = (el: Element) => {
       const node = el as HTMLElement
       if (node.hasAttribute(MARK)) return
+      // ADDED: Skip if explicitly marked to preserve background
+      if (node.hasAttribute("data-no-bg-compat")) return
+
       node.setAttribute(MARK, "true")
       // Preserve layout; just make the background transparent.
       node.style.backgroundColor = "transparent"

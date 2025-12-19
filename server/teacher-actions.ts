@@ -3,6 +3,7 @@
 import { sql } from "@/server/db"
 import { randomUUID, randomBytes } from "crypto"
 import { cookies } from "next/headers"
+import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
 import { getCurrentUser } from "@/lib/auth"
 import { normalizeGoogleDriveUrl, isGoogleDriveUrl } from "@/lib/gdrive"
@@ -140,11 +141,15 @@ export async function uploadVideo(input: UploadVideoInput) {
 
     let normalizedUrl = (input.videoUrl ?? "").trim()
 
-    if (input.sourceType === "bunny_id") {
+    // Handle "bunny_upload" same as "bunny_id" - it contains the ID
+    if (input.sourceType === "bunny_id" || input.sourceType === "bunny_upload") {
       const videoId = sanitizeBunnyVideoId(normalizedUrl)
-      const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID
+
+      // Use provided library ID or fallback to env
+      const libraryId = input.bunnyLibraryId || process.env.BUNNY_STREAM_LIBRARY_ID
+
       if (!libraryId) {
-        return { ok: false as const, error: "BUNNY_STREAM_LIBRARY_ID is not configured in the environment." }
+        return { ok: false as const, error: "BUNNY_STREAM_LIBRARY_ID is not configured and no library ID provided." }
       }
       if (!videoId) {
         return { ok: false as const, error: "Please provide a valid Bunny Video ID." }
@@ -153,6 +158,10 @@ export async function uploadVideo(input: UploadVideoInput) {
       if (input.directPlayUrl?.trim()) {
         normalizedUrl = normalizeBunnyDirectPlayUrl(input.directPlayUrl)
       } else {
+        // We construct the "Direct Play" URL which is often used as the canonical URL in the DB
+        // For HLS playback, the frontend player often needs to resolve this or we store the .m3u8 directly?
+        // Looking at existing code, `buildBunnyHlsUrl` likely returns the .m3u8 or Player URL.
+        // Assuming `buildBunnyHlsUrl` constructs standard stream url.
         normalizedUrl = buildBunnyHlsUrl(libraryId, videoId)
       }
     } else {
@@ -225,6 +234,25 @@ export async function uploadVideo(input: UploadVideoInput) {
     console.error("uploadVideo error", e)
     return { ok: false as const, error: e?.message ?? "DB Error" }
   }
+}
+
+
+
+// ... imports
+
+export async function getSnowSetting() {
+  // Fetch the setting from the first teacher found/admin
+  // In a single-tenant or main-teacher app, this is fine
+  const users = await sql`SELECT snow_enabled FROM users WHERE role = 'teacher' ORDER BY created_at ASC LIMIT 1` as any[]
+  // Default to true if not set
+  return users[0]?.snow_enabled ?? true
+}
+
+export async function toggleSnowSetting(enabled: boolean) {
+  const teacherId = await requireTeacherId()
+  await sql`UPDATE users SET snow_enabled = ${enabled} WHERE id = ${teacherId}`
+  revalidatePath("/")
+  return { ok: true }
 }
 
 export async function createStudent(input: CreateStudentInput) {

@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getBunnyConfig, saveBunnyConfig, saveBunnyAccountKey, listBunnyLibraries } from "@/server/bunny-actions"
+import { getSnowSetting, toggleSnowSetting } from "@/server/teacher-actions"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 
@@ -156,7 +158,46 @@ export default function SettingsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Visual Settings */}
+            <Card className="mt-8 bg-slate-950 border-slate-800 text-slate-100">
+                <CardHeader>
+                    <CardTitle className="text-xl text-blue-400">Seasonal Effects ❄️</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <SnowToggle />
+                </CardContent>
+            </Card>
         </div>
     )
 }
 
+function SnowToggle() {
+    const [enabled, setEnabled] = useState(true)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        getSnowSetting().then(val => {
+            setEnabled(val)
+            setLoading(false)
+        })
+    }, [])
+
+    async function handleToggle(val: boolean) {
+        setEnabled(val)
+        await toggleSnowSetting(val)
+        toast.success(val ? "Let it snow! ❄️" : "Winter is over ☀️")
+    }
+
+    if (loading) return <Loader2 className="h-5 w-5 animate-spin" />
+
+    return (
+        <div className="flex items-center justify-between">
+            <div className="space-y-1">
+                <Label>Winter Snow Effect</Label>
+                <p className="text-xs text-slate-400">Show falling snow animation on student pages.</p>
+            </div>
+            <Switch checked={enabled} onCheckedChange={handleToggle} />
+        </div>
+    )
+}

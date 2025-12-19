@@ -80,7 +80,11 @@ export default function StudentVideoCard({
                 className="h-full w-full object-cover"
               />
             </div>
-            <div className="absolute inset-0 grid place-items-center bg-black/20 opacity-100 group-hover:bg-black/30 transition-colors">
+            <div
+              className="absolute inset-0 grid place-items-center bg-black/20 opacity-100 group-hover:bg-black/30 transition-colors"
+              data-no-bg-compat="true"
+              suppressHydrationWarning
+            >
               <span className="inline-flex items-center gap-2 rounded-full bg-background/90 px-3 py-2 text-sm font-medium text-primary shadow">
                 <Play className="h-4 w-4" />
                 Play

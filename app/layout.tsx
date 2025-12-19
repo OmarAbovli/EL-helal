@@ -12,6 +12,10 @@ import { FloatingChat } from "@/components/messaging/floating-chat"
 import { cookies } from "next/headers"
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
+import { Toaster } from "@/components/ui/toaster"
+import { GlobalSnow } from "@/components/global-snow"
+import { getSnowSetting } from "@/server/teacher-actions"
+
 import { LastPageTracker } from "@/components/last-page-tracker";
 
 export const viewport = {
@@ -75,11 +79,11 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
   const sessionId = cookieStore.get("session_id")?.value
   const user = await getCurrentUser(sessionId)
+  const snowEnabled = await getSnowSetting().catch(() => false)
 
   return (
     <html lang="en" suppressHydrationWarning className="h-full" data-three-bg="on">
@@ -105,6 +109,7 @@ html, body { background: transparent !important; }
       <body className="min-h-screen text-foreground antialiased">
         <AuthProvider user={user}>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+            <GlobalSnow enabled={snowEnabled} />
             {/* Keeps the 3D background visible; does not alter layout */}
             <Global3DBackground />
             {/* Runtime compatibility pass for late-loading full-screen solid backgrounds */}

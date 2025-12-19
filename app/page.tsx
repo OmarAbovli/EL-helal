@@ -41,34 +41,26 @@ export default async function HomePage() {
   const free = await getFreeVideos()
 
   return (
-    <main className="text-foreground">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Competooo",
-        "url": `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}`,
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/search?q={search_term_string}`,
-          "query-input": "required name=search_term_string"
-        }
-      })}} />
+    <main className="text-foreground min-h-screen bg-[radial-gradient(ellipse_at_top,_#fef9c3_10%,_#ffffff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0b1220_100%)]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Competooo",
+          "url": `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}`,
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/search?q={search_term_string}`,
+            "query-input": "required name=search_term_string"
+          }
+        })
+      }} />
       <SiteHeader />
       <Hero3DBook primaryHref="/about-us" secondaryHref="/login" />
 
       {/* Pillars */}
-      <section className="relative border-b">
-        {/* subtle gradient wash with dark variant */}
-        <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-          <div
-            className="h-full w-full dark:hidden"
-            style={{ background: "linear-gradient(180deg, transparent 0%, rgba(16,185,129,0.10) 100%)" }}
-          />
-          <div
-            className="hidden h-full w-full dark:block"
-            style={{ background: "linear-gradient(180deg, transparent 0%, rgba(8,47,35,0.35) 100%)" }}
-          />
-        </div>
+      <section className="relative border-b border-white/5">
+        {/* Removed conflicting green/grey gradients to let the main Navy Blue flow through */}
         <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:grid-cols-3">
           <InfoCard
             icon={<Sparkles className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />}
