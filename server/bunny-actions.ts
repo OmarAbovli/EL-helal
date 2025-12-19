@@ -1,6 +1,9 @@
 "use server"
 
 import { buildBunnyEmbedUrl, buildBunnyHlsUrl } from "@/lib/bunny"
+import { sql } from "@/server/db"
+import { getCurrentUser } from "@/lib/auth"
+import { cookies } from "next/headers"
 
 type BunnyVideoApiItem = {
   guid: string
@@ -21,38 +24,155 @@ type MetaResult =
   | { ok: true; title?: string; durationSeconds?: number; thumbnailUrl?: string }
   | { ok: false; error: string }
 
-function getEnv() {
-  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID
-  const apiKey = process.env.BUNNY_STREAM_API_KEY
-  return { libraryId, apiKey }
+// -- Config Management --
+
+async function requireTeacherId() {
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get("session_id")?.value
+  const me = await getCurrentUser(sessionId)
+  if (!me || me.role !== "teacher") {
+    throw new Error("Not authorized")
+  }
+  return me.id
+}
+
+export async function saveBunnyAccountKey(accountKey: string) {
+  try {
+    const teacherId = await requireTeacherId()
+    await sql`
+      UPDATE users 
+      SET bunny_main_api_key = ${accountKey}
+      WHERE id = ${teacherId}
+    `
+    return { ok: true }
+  } catch (e: any) {
+    return { ok: false, error: e.message }
+  }
+}
+
+export async function getBunnyAccountKey() {
+  try {
+    const teacherId = await requireTeacherId()
+    const [user] = await sql`SELECT bunny_main_api_key FROM users WHERE id = ${teacherId}` as any[]
+    return user?.bunny_main_api_key || null
+  } catch {
+    return null
+  }
+}
+
+export async function listBunnyLibraries(accountKey?: string) {
+  // If not provided, try to get from DB
+  let key = accountKey
+  if (!key) key = await getBunnyAccountKey()
+
+  if (!key) return { ok: false, error: "Missing Account API Key" }
+
+  try {
+    const res = await fetch("https://api.bunny.net/videolibrary", {
+      headers: {
+        accept: "application/json",
+        AccessKey: key
+      }
+    })
+
+    if (!res.ok) {
+      // Validation check
+      if (res.status === 401) return { ok: false, error: "Invalid Account API Key" }
+      return { ok: false, error: `Failed to fetch libraries: ${res.status}` }
+    }
+
+    const data = await res.json() as any[]
+    // Map to simpler structure
+    const libraries = data.map(lib => ({
+      id: lib.Id,
+      name: lib.Name,
+      apiKey: lib.ApiKey // This is the READ-WRITE key for this specific library
+    }))
+
+    return { ok: true, libraries }
+  } catch (e: any) {
+    return { ok: false, error: e.message }
+  }
+}
+
+export async function saveBunnyConfig(apiKey: string, libraryId: string) {
+  try {
+    const teacherId = await requireTeacherId()
+    await sql`
+      UPDATE users 
+      SET bunny_api_key = ${apiKey}, bunny_library_id = ${libraryId}
+      WHERE id = ${teacherId}
+    `
+    return { ok: true }
+  } catch (e: any) {
+    return { ok: false, error: e.message }
+  }
+}
+
+export async function getBunnyConfig(): Promise<{ apiKey: string | null; libraryId: string | null; mainKey: string | null } | null> {
+  try {
+    const teacherId = await requireTeacherId()
+    const [user] = await sql`SELECT bunny_api_key, bunny_library_id, bunny_main_api_key FROM users WHERE id = ${teacherId}` as any[]
+
+    // Fallback to env if not in DB (for backward compatibility/admin usage)
+    const apiKey = user?.bunny_api_key || process.env.BUNNY_STREAM_API_KEY
+    const libraryId = user?.bunny_library_id || process.env.BUNNY_STREAM_LIBRARY_ID
+    const mainKey = user?.bunny_main_api_key
+
+    if (!apiKey || !libraryId) return { apiKey: null, libraryId: null, mainKey }
+    return { apiKey, libraryId, mainKey }
+  } catch {
+    return null
+  }
 }
 
 function buildThumbUrl(libraryId: string, item: BunnyVideoApiItem) {
-  // Thumbnail URL shape can vary per setup; this common pattern works for most Bunny libraries:
-  // https://vz-{libraryId}.b-cdn.net/{guid}/thumbnail.jpg or use the API-provided path if available.
-  // Prefer API-provided filename when present:
   if (item.thumbnailFileName) {
-    // video.bunnycdn.com returns variations like "/{guid}/thumbnail.jpg".
     return `https://vz-${libraryId}.b-cdn.net${item.thumbnailFileName.startsWith("/") ? "" : "/"}${item.thumbnailFileName}`
   }
   return `https://vz-${libraryId}.b-cdn.net/${item.guid}/thumbnail.jpg`
 }
 
-/**
- * List videos in your Bunny library (server-side).
- */
+// -- Actions --
+
+export async function createBunnyVideo(title: string) {
+  const config = await getBunnyConfig()
+  if (!config) return { ok: false, error: "Bunny.net not configured" }
+  const { apiKey, libraryId } = config
+
+  try {
+    const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos`, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        AccessKey: apiKey
+      },
+      body: JSON.stringify({ title })
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      return { ok: false, error: `Create failed: ${res.status} ${text}` }
+    }
+
+    const data = await res.json()
+    return { ok: true, guid: data.guid, libraryId } // Return libraryId needed for playback URL construction
+  } catch (e: any) {
+    return { ok: false, error: e.message }
+  }
+}
+
 export async function listBunnyVideos(params?: {
   page?: number
   itemsPerPage?: number
   search?: string
 }) {
-  const { libraryId, apiKey } = getEnv()
-  if (!libraryId) {
-    return { ok: false as const, error: "BUNNY_STREAM_LIBRARY_ID is not configured." }
+  const config = await getBunnyConfig()
+  if (!config) {
+    return { ok: false as const, error: "Bunny.net credentials missing. Please configure them in Settings." }
   }
-  if (!apiKey) {
-    return { ok: false as const, error: "BUNNY_STREAM_API_KEY is not configured." }
-  }
+  const { libraryId, apiKey } = config
 
   const page = params?.page ?? 1
   const itemsPerPage = params?.itemsPerPage ?? 12
@@ -99,17 +219,15 @@ export async function listBunnyVideos(params?: {
   }
 }
 
-/**
- * Fetch a single video’s metadata by Video ID (GUID).
- */
 export async function getBunnyVideoMetadata(videoId: string): Promise<MetaResult> {
-  const lib = process.env.BUNNY_STREAM_LIBRARY_ID
-  const apiKey = process.env.BUNNY_STREAM_API_KEY
-  if (!lib || !apiKey) {
+  const config = await getBunnyConfig()
+  if (!config) {
     return { ok: false, error: "Bunny API credentials are not configured." }
   }
+  const { libraryId, apiKey } = config
+
   try {
-    const res = await fetch(`https://video.bunnycdn.com/library/${lib}/videos/${videoId}`, {
+    const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`, {
       headers: { accept: "application/json", AccessKey: apiKey },
       cache: "no-store",
     })

@@ -12,10 +12,12 @@ import { uploadVideo } from "@/server/teacher-actions"
 import { useToast } from "@/hooks/use-toast"
 import { ThumbnailUpload } from "@/components/thumbnail-upload"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { getBunnyVideoMetadata } from "@/server/bunny-actions"
+import { getBunnyVideoMetadata, listBunnyLibraries } from "@/server/bunny-actions"
 import BunnyLibraryPicker from "@/components/bunny-library-picker"
+import { BunnyUploader } from "@/components/bunny-uploader"
 
 import { VideoPackage } from "@/server/package-actions"
+import { useEffect } from "react"
 
 const gradeOptions = [
   { label: "First year", value: 1 },
@@ -36,10 +38,34 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
   const { toast } = useToast()
   const [title, setTitle] = useState("")
   const [category, setCategory] = useState("")
+
+  // ... existing state ... 
+
+  // Library selection state
+  const [libraries, setLibraries] = useState<any[]>([])
+  const [selectedLibraryId, setSelectedLibraryId] = useState<string>("")
+  const [loadingLibs, setLoadingLibs] = useState(false)
+
+  // Fetch libraries on mount
+  useEffect(() => {
+    setLoadingLibs(true)
+    listBunnyLibraries().then(res => {
+      if (res.ok && res.libraries) {
+        setLibraries(res.libraries)
+        if (res.libraries.length > 0) {
+          // Default to first one or previously selected? 
+          // We'll let user pick, or select first
+          setSelectedLibraryId(String(res.libraries[0].id))
+        }
+      }
+      setLoadingLibs(false)
+    })
+  }, [])
+
   const [description, setDescription] = useState("")
   const [videoUrl, setVideoUrl] = useState("")
   const [directPlayUrl, setDirectPlayUrl] = useState("") // Bunny Direct Play URL or HLS URL
-  const [sourceType, setSourceType] = useState<"gdrive" | "youtube" | "vimeo" | "bunny" | "bunny_id">("bunny")
+  const [sourceType, setSourceType] = useState<"gdrive" | "youtube" | "vimeo" | "bunny" | "bunny_id" | "bunny_upload">("bunny")
   const [grades, setGrades] = useState<number[]>([])
   const [packageId, setPackageId] = useState<string | null>(null)
   const [isFree, setIsFree] = useState(false)
@@ -257,6 +283,12 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
               </Label>
             </div>
             <div className="flex items-center space-x-2">
+              <RadioGroupItem id="src-bn-up" value="bunny_upload" />
+              <Label htmlFor="src-bn-up" className="cursor-pointer font-bold text-emerald-500">
+                Direct Upload 🚀
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
               <RadioGroupItem id="src-bnid" value="bunny_id" />
               <Label htmlFor="src-bnid" className="cursor-pointer">
                 Bunny (Video ID)
@@ -299,6 +331,26 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
           )}
         </div>
         <p className="text-xs text-muted-foreground">{helper}</p>
+
+        {sourceType === "bunny_upload" && (
+          <div className="mt-4">
+            <BunnyUploader onUploadComplete={(vid, playUrl) => {
+              setSourceType("bunny_id") // Switch to ID mode after upload
+              setVideoUrl(vid)
+              setDirectPlayUrl(playUrl)
+              toast({ title: "Upload Successful", description: "Video ID filled. You can now fetch metadata or save." })
+              // Optional: auto fetch meta?
+              startTransition(async () => {
+                const res = await getBunnyVideoMetadata(vid)
+                if (res.ok) {
+                  setMetaDurationSec(res.durationSeconds)
+                  setThumbnailUrl(res.thumbnailUrl || "")
+                }
+              })
+            }} />
+          </div>
+        )}
+
         {sourceType === "bunny" && (
           <>
             <div className="space-y-2">
@@ -337,7 +389,7 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
       {/* حقول التحكم في المشاهدات */}
       <div className="space-y-4 rounded-lg border p-4 bg-muted/50">
         <h3 className="text-sm font-semibold">Watch Limit Settings</h3>
-        
+
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label htmlFor="watch-limit">Enable Watch Limit</Label>
