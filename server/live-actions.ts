@@ -95,6 +95,60 @@ export async function setLiveStatus(input: {
     }
 
     revalidatePath("/teacher")
+
+    // --- SYNC WITH SESSION HISTORY (voice_calls) ---
+    // If it's a LiveKit/Jitsi session, we want to record it in voice_calls for history/attendance
+    if (input.active && input.url) {
+      const isLiveKit = input.url.includes("/livekit?room=");
+      const isJitsi = input.url.includes("meet.jit.si/");
+
+      if (isLiveKit || isJitsi) {
+        const provider = isLiveKit ? "livekit" : "jitsi";
+        let roomName = "";
+
+        if (isLiveKit) {
+          roomName = input.url.split("room=")[1]?.split("&")[0] || "";
+        } else {
+          roomName = input.url.split("meet.jit.si/")[1]?.split("#")[0] || "";
+        }
+
+        if (roomName) {
+          // Create the session in voice_calls
+          const callId = "vc_" + randomUUID();
+          // We pick the first grade from the list as the primary grade for the call record
+          const primaryGrade = input.grades && input.grades.length > 0 ? input.grades[0] : 0;
+
+          await sql`
+            INSERT INTO voice_calls (id, grade, started_by, room_name, room_url, status, provider)
+            VALUES (${callId}, ${primaryGrade}, ${teacherId}, ${roomName}, ${input.url}, 'active', ${provider})
+            ON CONFLICT (room_name) DO NOTHING;
+          `;
+
+          // Record the teacher as a participant
+          await sql`
+            INSERT INTO voice_call_participants (call_id, user_id)
+            SELECT id, ${teacherId} FROM voice_calls WHERE room_name = ${roomName} AND status = 'active'
+            ON CONFLICT (call_id, user_id) DO NOTHING;
+          `;
+        }
+      }
+    } else if (!input.active) {
+      // If stopping live, mark any active sessions for this teacher as ended
+      await sql`
+        UPDATE voice_calls
+        SET status = 'ended', ended_at = NOW()
+        WHERE started_by = ${teacherId} AND status = 'active';
+      `;
+      // Also mark participants as left
+      await sql`
+        UPDATE voice_call_participants
+        SET left_at = NOW()
+        WHERE left_at IS NULL AND call_id IN (
+          SELECT id FROM voice_calls WHERE started_by = ${teacherId} AND status = 'ended' AND ended_at > NOW() - INTERVAL '1 minute'
+        );
+      `;
+    }
+
     return { ok: true as const }
   } catch (e: any) {
     console.error("setLiveStatus error", e)

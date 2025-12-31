@@ -79,6 +79,24 @@ export async function endRoom(roomName: string) {
     const svc = new RoomServiceClient(wsUrl, apiKey, apiSecret)
 
     await svc.deleteRoom(roomName)
+
+    // Update database status
+    try {
+        await sql`
+            UPDATE voice_calls
+            SET status = 'ended', ended_at = NOW()
+            WHERE room_name = ${roomName} AND status = 'active';
+        `
+        // Also mark all participants as left
+        await sql`
+            UPDATE voice_call_participants
+            SET left_at = NOW()
+            WHERE left_at IS NULL AND call_id IN (SELECT id FROM voice_calls WHERE room_name = ${roomName});
+        `
+    } catch (e) {
+        console.error("Failed to end session in DB", e)
+    }
+
     return { success: true }
 }
 

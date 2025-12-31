@@ -26,6 +26,20 @@ export async function GET(req: NextRequest) {
         const participantName = user.name || participantNameParam || "Guest"
 
         const { token } = await createLiveKitToken(room, participantName, role)
+
+        // Record join in database for attendance
+        try {
+            const { sql } = await import("@/server/db")
+            await sql`
+                INSERT INTO voice_call_participants (call_id, user_id)
+                SELECT id, ${user.id} FROM voice_calls WHERE room_name = ${room} AND status = 'active'
+                ON CONFLICT (call_id, user_id) DO NOTHING;
+            `
+        } catch (dbErr) {
+            console.error("Failed to record participant join", dbErr)
+            // We still return the token so the user can join the call
+        }
+
         return NextResponse.json({ token })
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 })
