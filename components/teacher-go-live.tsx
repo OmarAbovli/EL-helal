@@ -24,6 +24,17 @@ export function TeacherGoLive({ packages }: { packages: VideoPackage[] }) {
   const [streamType, setStreamType] = useState<'external' | 'jitsi' | 'livekit'>('external')
 
   useEffect(() => {
+    getMyLiveStatus().then((s) => {
+      setTitle(s.title)
+      setUrl(s.url)
+      setIsActive(s.isActive)
+      setGrades(s.grades)
+      setSelectedPackageIds(s.packageIds)
+      setLoaded(true)
+    })
+  }, [])
+
+  useEffect(() => {
     // If switching to integrated providers, auto-generate a URL structure
     // Note: The actual unique room creation happens on 'activate', but we show a preview or placeholder here.
     if (streamType === 'jitsi') {

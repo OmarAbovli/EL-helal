@@ -14,7 +14,11 @@ import {
   SidebarRail
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
-import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck, Image, Ticket, UserPlus } from "lucide-react"
+import { Gauge, Grid2X2, Radio, Upload, Users, QrCode, Settings, PencilRuler, Mail, ClipboardCheck, Image, Ticket, UserPlus, LogOut } from "lucide-react"
+import { logout } from "@/server/auth-actions"
+import { useRouter } from "next/navigation"
+import { useTransition } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 const items = [
   { title: "لوحة التحكم", href: "/teacher", icon: Gauge },
@@ -38,6 +42,21 @@ interface TeacherAppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function TeacherAppSidebar({ unreadCount = 0, pendingPhotosCount = 0, ...props }: TeacherAppSidebarProps) {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [isPending, startTransition] = useTransition()
+
+  async function handleLogout() {
+    startTransition(async () => {
+      const res = await logout()
+      if (res.ok) {
+        toast({ title: "تم تسجيل الخروج" })
+        router.push("/")
+        router.refresh()
+      }
+    })
+  }
+
   return (
     <Sidebar className="sticky top-0 h-screen" {...props}>
       <SidebarHeader>
@@ -68,6 +87,17 @@ export function TeacherAppSidebar({ unreadCount = 0, pendingPhotosCount = 0, ...
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={handleLogout}
+                  disabled={isPending}
+                  className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50/10"
+                >
+                  <LogOut className="h-5 w-5 mr-3" />
+                  <span>تسجيل الخروج</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
