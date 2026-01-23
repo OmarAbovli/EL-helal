@@ -61,11 +61,21 @@ export default function TeacherExamsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">الاختبارات اللايف</h1>
-            <p className="text-slate-400">إدارة ومتابعة الاختبارات المباشرة</p>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/teacher")}
+              className="text-slate-400 hover:text-white hover:bg-slate-800"
+            >
+              <Plus className="h-6 w-6 rotate-45" /> {/* Simple back arrow using rotated plus or import ArrowRight */}
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">الاختبارات اللايف</h1>
+              <p className="text-slate-400">إدارة ومتابعة الاختبارات المباشرة</p>
+            </div>
           </div>
-          <Button 
+          <Button
             onClick={() => router.push("/teacher/exams/create")}
             className="bg-gradient-to-r from-emerald-500 to-teal-500 gap-2"
           >
@@ -145,7 +155,7 @@ export default function TeacherExamsPage() {
                 <Calendar className="h-16 w-16 text-slate-600 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">لا توجد اختبارات</h3>
                 <p className="text-slate-400 mb-6">ابدأ بإنشاء اختبار لايف جديد</p>
-                <Button 
+                <Button
                   onClick={() => router.push("/teacher/exams/create")}
                   className="bg-gradient-to-r from-emerald-500 to-teal-500"
                 >
@@ -168,7 +178,7 @@ export default function TeacherExamsPage() {
                             {status.label}
                           </span>
                         </div>
-                        
+
                         {exam.description && (
                           <p className="text-slate-400 mb-4">{exam.description}</p>
                         )}
@@ -187,9 +197,9 @@ export default function TeacherExamsPage() {
                           <div>
                             <span className="text-slate-500">الموعد:</span>
                             <span className="text-white font-medium mr-2">
-                              {new Date(exam.scheduled_at).toLocaleString('ar-EG', { 
+                              {new Date(exam.scheduled_at).toLocaleString('ar-EG', {
                                 timeZone: 'Africa/Cairo',
-                                month: 'short', 
+                                month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit'

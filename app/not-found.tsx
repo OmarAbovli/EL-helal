@@ -32,43 +32,43 @@ export default function NotFound() {
     const enemyBullets = enemyBulletsRef.current;
 
     function resetGame() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-        const isSmallScreen = canvas.width < 768;
+      const isSmallScreen = canvas.width < 768;
 
-        player.width = isSmallScreen ? 40 : 50;
-        player.height = isSmallScreen ? 24 : 30;
-        player.x = canvas.width / 2 - player.width / 2;
-        player.y = canvas.height - player.height - 20;
+      player.width = isSmallScreen ? 40 : 50;
+      player.height = isSmallScreen ? 24 : 30;
+      player.x = canvas.width / 2 - player.width / 2;
+      player.y = canvas.height - player.height - 20;
 
-        const enemyRows = 4;
-        const enemyCols = isSmallScreen ? 6 : 8;
-        const enemyWidth = isSmallScreen ? 30 : 40;
-        const enemyHeight = isSmallScreen ? 22 : 30;
-        const enemyPadding = isSmallScreen ? 10 : 20;
-        const enemyOffsetTop = 50;
-        const totalEnemiesWidth = enemyCols * (enemyWidth + enemyPadding) - enemyPadding;
-        const enemyOffsetLeft = (canvas.width - totalEnemiesWidth) / 2;
-        
-        enemies = [];
-        for (let c = 0; c < enemyCols; c++) {
-            for (let r = 0; r < enemyRows; r++) {
-                const points = (4 - r) * 10;
-                enemies.push({
-                    x: c * (enemyWidth + enemyPadding) + enemyOffsetLeft,
-                    y: r * (enemyHeight + enemyPadding) + enemyOffsetTop,
-                    width: enemyWidth,
-                    height: enemyHeight,
-                    speed: enemySpeed,
-                    points: points,
-                });
-            }
+      const enemyRows = 4;
+      const enemyCols = isSmallScreen ? 6 : 8;
+      const enemyWidth = isSmallScreen ? 30 : 40;
+      const enemyHeight = isSmallScreen ? 22 : 30;
+      const enemyPadding = isSmallScreen ? 10 : 20;
+      const enemyOffsetTop = 50;
+      const totalEnemiesWidth = enemyCols * (enemyWidth + enemyPadding) - enemyPadding;
+      const enemyOffsetLeft = (canvas.width - totalEnemiesWidth) / 2;
+
+      enemies = [];
+      for (let c = 0; c < enemyCols; c++) {
+        for (let r = 0; r < enemyRows; r++) {
+          const points = (4 - r) * 10;
+          enemies.push({
+            x: c * (enemyWidth + enemyPadding) + enemyOffsetLeft,
+            y: r * (enemyHeight + enemyPadding) + enemyOffsetTop,
+            width: enemyWidth,
+            height: enemyHeight,
+            speed: enemySpeed,
+            points: points,
+          });
         }
-        score = 0;
-        gameover = false;
-        bullets.length = 0;
-        enemyBullets.length = 0;
+      }
+      score = 0;
+      gameover = false;
+      bullets.length = 0;
+      enemyBullets.length = 0;
     }
 
     function drawPlayer() {
@@ -102,27 +102,27 @@ export default function NotFound() {
       ctx!.font = '20px Arial';
       ctx!.fillText(`Score: ${score}`, 20, 30);
     }
-    
+
     function drawGameOver() {
-        ctx!.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx!.fillRect(0, 0, canvas.width, canvas.height);
-        ctx!.fillStyle = '#fff';
-        ctx!.font = '50px Arial';
-        ctx!.textAlign = 'center';
-        ctx!.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 50);
-        ctx!.font = '20px Arial';
-        ctx!.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
+      ctx!.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx!.fillRect(0, 0, canvas.width, canvas.height);
+      ctx!.fillStyle = '#fff';
+      ctx!.font = '50px Arial';
+      ctx!.textAlign = 'center';
+      ctx!.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 50);
+      ctx!.font = '20px Arial';
+      ctx!.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
     }
 
     function drawYouWin() {
-        ctx!.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx!.fillRect(0, 0, canvas.width, canvas.height);
-        ctx!.fillStyle = '#00ff00';
-        ctx!.font = '50px Arial';
-        ctx!.textAlign = 'center';
-        ctx!.fillText('YOU WIN!', canvas.width / 2, canvas.height / 2 - 50);
-        ctx!.font = '20px Arial';
-        ctx!.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
+      ctx!.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx!.fillRect(0, 0, canvas.width, canvas.height);
+      ctx!.fillStyle = '#00ff00';
+      ctx!.font = '50px Arial';
+      ctx!.textAlign = 'center';
+      ctx!.fillText('YOU WIN!', canvas.width / 2, canvas.height / 2 - 50);
+      ctx!.font = '20px Arial';
+      ctx!.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
     }
 
 
@@ -173,14 +173,14 @@ export default function NotFound() {
       enemies.forEach(enemy => {
         enemy.x += enemy.speed * enemyDirection;
         if (enemy.x + enemy.width > canvas.width || enemy.x < 0) {
-            changeDirection = true;
+          changeDirection = true;
         }
       });
 
-      if(changeDirection) {
+      if (changeDirection) {
         enemyDirection *= -1;
         enemies.forEach(enemy => {
-            enemy.y += enemy.height;
+          enemy.y += enemy.height;
         });
       }
 
@@ -203,37 +203,37 @@ export default function NotFound() {
 
       enemyBullets.forEach((enemyBullet, enemyBulletIndex) => {
         if (
-            enemyBullet.x < player.x + player.width &&
-            enemyBullet.x + enemyBullet.width > player.x &&
-            enemyBullet.y < player.y + player.height &&
-            enemyBullet.y + enemyBullet.height > player.y
+          enemyBullet.x < player.x + player.width &&
+          enemyBullet.x + enemyBullet.width > player.x &&
+          enemyBullet.y < player.y + player.height &&
+          enemyBullet.y + enemyBullet.height > player.y
         ) {
-            gameover = true;
-            drawGameOver();
+          gameover = true;
+          drawGameOver();
         }
 
         bullets.forEach((bullet, bulletIndex) => {
-            if (
-                enemyBullet.x < bullet.x + bullet.width &&
-                enemyBullet.x + enemyBullet.width > bullet.x &&
-                enemyBullet.y < bullet.y + bullet.height &&
-                enemyBullet.y + enemyBullet.height > bullet.y
-            ) {
-                enemyBullets.splice(enemyBulletIndex, 1);
-                bullets.splice(bulletIndex, 1);
-            }
+          if (
+            enemyBullet.x < bullet.x + bullet.width &&
+            enemyBullet.x + enemyBullet.width > bullet.x &&
+            enemyBullet.y < bullet.y + bullet.height &&
+            enemyBullet.y + enemyBullet.height > bullet.y
+          ) {
+            enemyBullets.splice(enemyBulletIndex, 1);
+            bullets.splice(bulletIndex, 1);
+          }
         });
       });
 
       // Game over
       enemies.forEach(enemy => {
-          if(enemy.y + enemy.height > player.y) {
-              gameover = true;
-              drawGameOver();
-          }
+        if (enemy.y + enemy.height > player.y) {
+          gameover = true;
+          drawGameOver();
+        }
       });
 
-      if(enemies.length === 0) {
+      if (enemies.length === 0) {
         gameover = true;
         drawYouWin();
       }
@@ -264,7 +264,7 @@ export default function NotFound() {
     }
 
     function shoot() {
-      if(bullets.length < 5) { // Limit number of bullets on screen
+      if (bullets.length < 5) { // Limit number of bullets on screen
         bullets.push({
           x: player.x + player.width / 2 - 2.5,
           y: player.y,
@@ -276,57 +276,57 @@ export default function NotFound() {
     }
 
     function enemyShoot() {
-        if (enemies.length > 0) {
-            const frontEnemies = new Map<number, { x: number; y: number; width: number; height: number; }>();
-            enemies.forEach(enemy => {
-                if (!frontEnemies.has(enemy.x) || frontEnemies.get(enemy.x)!.y < enemy.y) {
-                    frontEnemies.set(enemy.x, enemy);
-                }
-            });
+      if (enemies.length > 0) {
+        const frontEnemies = new Map<number, { x: number; y: number; width: number; height: number; }>();
+        enemies.forEach(enemy => {
+          if (!frontEnemies.has(enemy.x) || frontEnemies.get(enemy.x)!.y < enemy.y) {
+            frontEnemies.set(enemy.x, enemy);
+          }
+        });
 
-            const shooters = Array.from(frontEnemies.values());
-            const randomShooter = shooters[Math.floor(Math.random() * shooters.length)];
-            
-            enemyBullets.push({
-                x: randomShooter.x + randomShooter.width / 2 - 2.5,
-                y: randomShooter.y + randomShooter.height,
-                width: 5,
-                height: 10,
-                speed: enemyBulletSpeed,
-            });
-        }
+        const shooters = Array.from(frontEnemies.values());
+        const randomShooter = shooters[Math.floor(Math.random() * shooters.length)];
+
+        enemyBullets.push({
+          x: randomShooter.x + randomShooter.width / 2 - 2.5,
+          y: randomShooter.y + randomShooter.height,
+          width: 5,
+          height: 10,
+          speed: enemyBulletSpeed,
+        });
+      }
     }
 
     function handleResize() {
-        if (gameLoopRef.current) {
-            cancelAnimationFrame(gameLoopRef.current);
-        }
-        if (enemyShootIntervalRef.current) {
-            clearInterval(enemyShootIntervalRef.current);
-        }
-        resetGame();
-        enemyShootIntervalRef.current = setInterval(enemyShoot, 1000);
-        update();
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
+      if (enemyShootIntervalRef.current) {
+        clearInterval(enemyShootIntervalRef.current);
+      }
+      resetGame();
+      enemyShootIntervalRef.current = setInterval(enemyShoot, 1000);
+      update();
     }
 
     window.addEventListener('resize', handleResize);
     document.addEventListener('keydown', keyDown);
     document.addEventListener('keyup', keyUp);
-    
+
     resetGame();
     enemyShootIntervalRef.current = setInterval(enemyShoot, 1000);
     update();
 
     return () => {
-        window.removeEventListener('resize', handleResize);
-        document.removeEventListener('keydown', keyDown);
-        document.removeEventListener('keyup', keyUp);
-        if (gameLoopRef.current) {
-            cancelAnimationFrame(gameLoopRef.current);
-        }
-        if (enemyShootIntervalRef.current) {
-            clearInterval(enemyShootIntervalRef.current);
-        }
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('keydown', keyDown);
+      document.removeEventListener('keyup', keyUp);
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
+      if (enemyShootIntervalRef.current) {
+        clearInterval(enemyShootIntervalRef.current);
+      }
     }
 
   }, []);
@@ -344,67 +344,70 @@ export default function NotFound() {
   };
 
   const shoot = () => {
-    if(bulletsRef.current.length < 5) {
-        bulletsRef.current.push({
-          x: playerRef.current.x + playerRef.current.width / 2 - 2.5,
-          y: playerRef.current.y,
-          width: 5,
-          height: 10,
-          speed: bulletSpeed,
-        });
+    if (bulletsRef.current.length < 5) {
+      bulletsRef.current.push({
+        x: playerRef.current.x + playerRef.current.width / 2 - 2.5,
+        y: playerRef.current.y,
+        width: 5,
+        height: 10,
+        speed: bulletSpeed,
+      });
     }
   };
 
   return (
-    <div style={{ background: '#000', color: '#fff', textAlign: 'center', overflow: 'hidden', height: '100vh' }}>
-        <div style={{position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 10, width: '90%'}}>
-            <h1 style={{fontSize: 'clamp(2rem, 10vw, 5rem)', fontWeight: 'bold', color: 'rgba(255,255,255,0.8)'}}>404 - Page Not Found</h1>
-            <p style={{fontSize: 'clamp(1rem, 4vw, 1.5rem)', margin: '1rem 0', color: 'rgba(255,255,255,0.6)'}}>
-                You've stumbled into the void. Play the game or return to safety.
-            </p>
-            <Link href="/" style={{
-                display: 'inline-block',
-                padding: '10px 20px',
-                background: '#00ff00',
-                color: '#000',
-                textDecoration: 'none',
-                borderRadius: '5px',
-                marginTop: '20px',
-                fontWeight: 'bold'
-            }}>
-                Return to Home
-            </Link>
-        </div>
+    <div style={{ background: '#020617', color: '#fff', textAlign: 'center', overflow: 'hidden', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 10, width: '90%' }}>
+        <h1 style={{ fontSize: 'clamp(2.5rem, 10vw, 6rem)', fontWeight: 'bold', color: '#f8fafc', letterSpacing: '-0.02em' }}>404</h1>
+        <h2 style={{ fontSize: 'clamp(1.2rem, 4vw, 2rem)', fontWeight: '600', color: '#10b981', marginTop: '-1rem' }}>Page Not Found</h2>
+        <p style={{ fontSize: 'clamp(1rem, 3vw, 1.125rem)', margin: '1.5rem auto', color: '#94a3b8', maxWidth: '600px', lineHeight: '1.6' }}>
+          You&apos;ve drifted into outer space. Ward off the invaders or use the portal to return home.
+        </p>
+        <Link href="/" style={{
+          display: 'inline-block',
+          padding: '12px 28px',
+          background: '#059669',
+          color: '#fff',
+          textDecoration: 'none',
+          borderRadius: '8px',
+          marginTop: '10px',
+          fontWeight: '600',
+          transition: 'all 0.2s px',
+          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.2)'
+        }}>
+          Return to Safety
+        </Link>
+      </div>
       <canvas ref={canvasRef} style={{ display: 'block' }} />
       {isMobile && (
         <div style={{
-            position: 'absolute',
-            bottom: '20px',
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'space-around',
-            zIndex: 20
+          position: 'absolute',
+          bottom: '20px',
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'space-around',
+          zIndex: 20
         }}>
-            <button 
-                onTouchStart={moveLeft} 
-                onTouchEnd={stopMoving}
-                style={{ background: 'rgba(0, 255, 0, 0.5)', color: '#000', padding: '15px 25px', border: '2px solid #00ff00', borderRadius: '5px', fontSize: '1.5rem' }}
-            >
-                &lt;
-            </button>
-            <button 
-                onClick={shoot}
-                style={{ background: 'rgba(255, 0, 0, 0.5)', color: '#fff', padding: '15px 25px', border: '2px solid #ff0000', borderRadius: '5px', fontSize: '1.5rem' }}
-            >
-                SHOOT
-            </button>
-            <button 
-                onTouchStart={moveRight} 
-                onTouchEnd={stopMoving}
-                style={{ background: 'rgba(0, 255, 0, 0.5)', color: '#000', padding: '15px 25px', border: '2px solid #00ff00', borderRadius: '5px', fontSize: '1.5rem' }}
-            >
-                &gt;
-            </button>
+          <button
+            onTouchStart={moveLeft}
+            onTouchEnd={stopMoving}
+            style={{ background: 'rgba(0, 255, 0, 0.5)', color: '#000', padding: '15px 25px', border: '2px solid #00ff00', borderRadius: '5px', fontSize: '1.5rem' }}
+          >
+            &lt;
+          </button>
+          <button
+            onClick={shoot}
+            style={{ background: 'rgba(255, 0, 0, 0.5)', color: '#fff', padding: '15px 25px', border: '2px solid #ff0000', borderRadius: '5px', fontSize: '1.5rem' }}
+          >
+            SHOOT
+          </button>
+          <button
+            onTouchStart={moveRight}
+            onTouchEnd={stopMoving}
+            style={{ background: 'rgba(0, 255, 0, 0.5)', color: '#000', padding: '15px 25px', border: '2px solid #00ff00', borderRadius: '5px', fontSize: '1.5rem' }}
+          >
+            &gt;
+          </button>
         </div>
       )}
     </div>

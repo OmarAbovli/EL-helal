@@ -39,7 +39,7 @@ interface TeacherAppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function TeacherAppSidebar({ unreadCount = 0, pendingPhotosCount = 0, ...props }: TeacherAppSidebarProps) {
   return (
-    <Sidebar {...props}>
+    <Sidebar className="sticky top-0 h-screen" {...props}>
       <SidebarHeader>
         <div className="px-2 py-1.5 text-sm font-semibold flex items-center gap-2">
           <span>Teacher Studio</span>

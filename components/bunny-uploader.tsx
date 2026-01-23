@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { createBunnyVideo, getBunnyConfig } from "@/server/bunny-actions"
 import { toast } from "sonner"
 import { Upload, X, CheckCircle, Loader2 } from "lucide-react"
+import { useUploadProgress } from "./upload-progress-provider"
 
 type BunnyUploaderProps = {
     onUploadComplete: (videoId: string, directPlayUrl: string) => void
@@ -15,9 +16,9 @@ type BunnyUploaderProps = {
 
 export function BunnyUploader({ onUploadComplete, disabled, targetLibraryId }: BunnyUploaderProps & { targetLibraryId?: string }) {
     const [file, setFile] = useState<File | null>(null)
-    const [uploading, setUploading] = useState(false)
-    const [progress, setProgress] = useState(0)
+    const [isInternalUploading, setIsInternalUploading] = useState(false)
     const [tempTitle, setTempTitle] = useState("")
+    const { addUpload, updateProgress, setUploadStatus } = useUploadProgress()
 
     async function handleUpload() {
         if (!file) return
@@ -26,72 +27,75 @@ export function BunnyUploader({ onUploadComplete, disabled, targetLibraryId }: B
             return
         }
 
-        setUploading(true)
-        setProgress(0)
+        const uploadId = Math.random().toString(36).substring(7)
+        addUpload(uploadId, tempTitle)
+        setIsInternalUploading(true)
 
         try {
             // 1. Create Video Placeholder
             const createRes = await createBunnyVideo(tempTitle, targetLibraryId)
-            if (!createRes.ok || !createRes.guid || !createRes.libraryId || !createRes.apiKey) {
-                throw new Error(createRes.error || "Failed to create video placeholder")
+            if (!createRes.ok || !createRes.guid) {
+                const err = createRes.error || "Failed to create video placeholder"
+                setUploadStatus(uploadId, "error", err)
+                throw new Error(err)
             }
 
-            const { guid, libraryId, apiKey } = createRes
+            const { guid, libraryId, apiKey } = createRes as any
 
             // 2. Upload File via PUT
-            // endpoint: PUT /library/{libraryId}/videos/{videoId}
             const xhr = new XMLHttpRequest()
             xhr.open("PUT", `https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`, true)
 
-            xhr.setRequestHeader("AccessKey", apiKey) // The library writes-enabled key
+            xhr.setRequestHeader("AccessKey", apiKey)
             xhr.setRequestHeader("Content-Type", "application/octet-stream")
             xhr.setRequestHeader("Accept", "application/json")
 
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
                     const percent = Math.round((e.loaded / e.total) * 100)
-                    setProgress(percent)
+                    updateProgress(uploadId, percent)
                 }
             }
 
             xhr.onload = () => {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    toast.success("Upload complete!")
-                    // Construct standard play URL for the form to use
-                    // Or just return the ID and let the form build it
+                    setUploadStatus(uploadId, "completed")
+                    toast.success(`Upload complete: ${tempTitle}`)
                     const playUrl = `https://iframe.mediadelivery.net/play/${libraryId}/${guid}`
                     onUploadComplete(guid, playUrl)
-                    setUploading(false)
+                    setIsInternalUploading(false)
+                    setFile(null)
+                    setTempTitle("")
                 } else {
-                    toast.error("Upload failed: " + xhr.statusText)
-                    setUploading(false)
+                    const err = "Upload failed: " + xhr.statusText
+                    setUploadStatus(uploadId, "error", err)
+                    toast.error(err)
+                    setIsInternalUploading(false)
                 }
             }
 
             xhr.onerror = () => {
-                toast.error("Network error during upload")
-                setUploading(false)
+                const err = "Network error during upload"
+                setUploadStatus(uploadId, "error", err)
+                toast.error(err)
+                setIsInternalUploading(false)
             }
 
             xhr.send(file)
 
         } catch (e: any) {
-            toast.error("Upload Error: " + e.message)
-            setUploading(false)
+            setIsInternalUploading(false)
         }
     }
 
-    if (uploading) {
+    if (isInternalUploading) {
         return (
-            <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 space-y-4">
-                <div className="flex items-center gap-3">
-                    <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
-                    <div className="text-sm font-medium text-slate-200">
-                        Uploading <span className="text-emerald-400">{file?.name}</span>
-                    </div>
-                </div>
-                <Progress value={progress} className="h-2 bg-slate-800" />
-                <p className="text-xs text-right text-slate-400">{progress}%</p>
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 flex flex-col items-center gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+                <p className="text-sm text-slate-400">Upload in progress in the background...</p>
+                <Button variant="ghost" size="sm" onClick={() => setIsInternalUploading(false)}>
+                    Add Another Video
+                </Button>
             </div>
         )
     }

@@ -30,7 +30,7 @@ export async function createQuiz(
   questions: QuizQuestion[],
   settings: QuizSettings
 ) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const sessionCookie = cookieStore.get("session_id")?.value
   const user = await getCurrentUser(sessionCookie)
   if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
@@ -57,11 +57,11 @@ export async function createQuiz(
 
 type StudentAnswer = {
   question_id: string
-  selected_option_index: number 
+  selected_option_index: number
 }
 
 export async function submitQuiz(quizId: string, answers: StudentAnswer[]) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const sessionCookie = cookieStore.get("session_id")?.value
   const user = await getCurrentUser(sessionCookie)
   if (!user || user.role !== 'student') {
@@ -90,14 +90,14 @@ export async function submitQuiz(quizId: string, answers: StudentAnswer[]) {
   for (const q of questions) {
     const studentAnswer = answers.find((a) => a.question_id === q.id)
     const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-    
+
     let isCorrect = false;
     let selectedIndex = -1; // Default to -1 for unanswered or invalid index
 
     if (studentAnswer && studentAnswer.selected_option_index != null && studentAnswer.selected_option_index >= 0) {
       selectedIndex = studentAnswer.selected_option_index;
       const selectedOption = options[selectedIndex];
-      
+
       if (selectedOption && selectedOption.is_correct == true) {
         isCorrect = true;
       }
@@ -158,7 +158,7 @@ export async function updateQuiz(
     questions: UpdateQuizQuestion[];
   }
 ) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const sessionCookie = cookieStore.get("session_id")?.value
   const user = await getCurrentUser(sessionCookie)
   if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
@@ -167,10 +167,10 @@ export async function updateQuiz(
 
   const [quiz] = await sql`SELECT teacher_id FROM quizzes WHERE id = ${quizId}`;
   if (!quiz || (user.role === 'teacher' && quiz.teacher_id !== user.id)) {
-      throw new Error('Forbidden');
+    throw new Error('Forbidden');
   }
 
-  await sql.begin(async tx => {
+  await sql.transaction(async tx => {
     // 1. Update the quiz settings
     await tx`
       UPDATE quizzes
@@ -226,28 +226,28 @@ export async function updateQuiz(
 }
 
 export async function deleteQuiz(quizId: string) {
-    const cookieStore = cookies()
-    const sessionCookie = cookieStore.get("session_id")?.value
-    const user = await getCurrentUser(sessionCookie)
-    if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
-      throw new Error('Unauthorized')
-    }
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get("session_id")?.value
+  const user = await getCurrentUser(sessionCookie)
+  if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
+    throw new Error('Unauthorized')
+  }
 
-    const [quiz] = await sql`SELECT teacher_id FROM quizzes WHERE id = ${quizId}`;
-    if (!quiz || (user.role === 'teacher' && quiz.teacher_id !== user.id)) {
-        throw new Error('Forbidden');
-    }
+  const [quiz] = await sql`SELECT teacher_id FROM quizzes WHERE id = ${quizId}`;
+  if (!quiz || (user.role === 'teacher' && quiz.teacher_id !== user.id)) {
+    throw new Error('Forbidden');
+  }
 
-    // The database schema uses ON DELETE CASCADE for all related tables (questions, submissions, answers).
-    // Therefore, a single DELETE on the quiz is sufficient.
-    await sql`DELETE FROM quizzes WHERE id = ${quizId};`;
+  // The database schema uses ON DELETE CASCADE for all related tables (questions, submissions, answers).
+  // Therefore, a single DELETE on the quiz is sufficient.
+  await sql`DELETE FROM quizzes WHERE id = ${quizId};`;
 
-    return { success: true };
+  return { success: true };
 }
 
 export async function getQuizResults(quizId: string) {
-  const cookieStore = cookies();
-  const sessionCookie = await cookieStore.get("session_id")?.value; // Await cookies().get()
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("session_id")?.value; // Await cookies().get()
   const user = await getCurrentUser(sessionCookie);
   if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
     throw new Error('Unauthorized');
@@ -314,8 +314,8 @@ export async function getQuizResults(quizId: string) {
 }
 
 export async function getQuizSubmissionDetails(quizId: string, submissionId: string) {
-  const cookieStore = cookies();
-  const sessionCookie = await cookieStore.get("session_id")?.value;
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("session_id")?.value;
   const user = await getCurrentUser(sessionCookie);
   if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
     throw new Error('Unauthorized');

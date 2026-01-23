@@ -14,8 +14,8 @@ import {
     CarouselLayout,
 } from "@livekit/components-react"
 import "@livekit/components-styles"
-import { Track } from "livekit-client"
-import { useEffect, useState, useRef } from "react"
+import { Track, RoomEvent, DataPacket_Kind } from "livekit-client"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { muteParticipant, removeParticipant, endRoom, getCallReport, saveCallStats } from "@/server/livekit-actions"
 
@@ -146,20 +146,88 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [isRecording]);
 
+    // -- Hand Raising Logic --
+    const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set())
+    const encoder = new TextEncoder()
+    const decoder = new TextDecoder()
+
+    useEffect(() => {
+        const onDataReceived = (payload: Uint8Array, participant: any) => {
+            const str = decoder.decode(payload)
+            try {
+                const data = JSON.parse(str)
+                if (data.type === 'RAISE_HAND') {
+                    setRaisedHands(prev => {
+                        const next = new Set(prev)
+                        if (data.raised) next.add(participant.identity)
+                        else next.delete(participant.identity)
+                        return next
+                    })
+                }
+            } catch (e) {
+                console.error("Failed to parse data message", e)
+            }
+        }
+        room.on(RoomEvent.DataReceived, onDataReceived)
+        return () => {
+            room.off(RoomEvent.DataReceived, onDataReceived)
+        }
+    }, [room])
+
+    function toggleHand() {
+        const isRaised = !raisedHands.has(room.localParticipant.identity)
+        const data = JSON.stringify({ type: 'RAISE_HAND', raised: isRaised })
+        room.localParticipant.publishData(encoder.encode(data), { reliable: true })
+
+        setRaisedHands(prev => {
+            const next = new Set(prev)
+            if (isRaised) next.add(room.localParticipant.identity)
+            else next.delete(room.localParticipant.identity)
+            return next
+        })
+    }
+
     async function handleStartRecording() {
         try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({
-                video: { mediaSource: "screen" } as any,
-                audio: true
+            // To capture both system audio and microphone:
+            // 1. Get screen stream with system audio
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100,
+                } as any
             });
 
-            // Also try to get microphone audio to mix in? 
-            // DisplayMedia usually captures system audio. 
-            // Mixing mic + system audio is complex client-side without AudioContext.
-            // For now, simpler is better: Record the meeting screen (which includes remote audio) + local mic?
-            // "screen" usually includes the speaker output (remote participants).
+            // 2. Get microphone stream
+            let finalStream = screenStream;
+            try {
+                const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+                const audioContext = new AudioContext();
+                const destination = audioContext.createMediaStreamDestination();
+
+                // Add screen audio if present
+                if (screenStream.getAudioTracks().length > 0) {
+                    const screenSource = audioContext.createMediaStreamSource(screenStream);
+                    screenSource.connect(destination);
+                }
+
+                // Add mic audio
+                const micSource = audioContext.createMediaStreamSource(micStream);
+                micSource.connect(destination);
+
+                // Create a new stream with unified audio + screen video
+                finalStream = new MediaStream([
+                    ...screenStream.getVideoTracks(),
+                    ...destination.stream.getAudioTracks()
+                ]);
+            } catch (micErr) {
+                console.warn("Microphone access denied for recording, capturing system audio only", micErr);
+            }
+
+            const recorder = new MediaRecorder(finalStream, { mimeType: 'video/webm; codecs=vp9' });
 
             recorder.ondataavailable = (e) => {
                 if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -178,7 +246,7 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
                 if (timerRef.current) clearInterval(timerRef.current);
 
                 // Stop all tracks to stop the "Sharing" indicator
-                stream.getTracks().forEach(track => track.stop());
+                finalStream.getTracks().forEach(track => track.stop());
             };
 
             recorder.start(1000); // Collect 1s chunks
@@ -317,7 +385,7 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
                             {activeSidebarTab === 'participants' && (
                                 <div className="p-2 space-y-2">
                                     <div className="text-xs font-bold text-zinc-500 uppercase px-2 py-2">In This Call</div>
-                                    <ParticipantList role={role} roomName={roomName} />
+                                    <ParticipantList role={role} roomName={roomName} raisedHands={raisedHands} />
                                 </div>
                             )}
 
@@ -379,6 +447,13 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
                 />
 
                 <button
+                    onClick={toggleHand}
+                    className={`px-3 py-2 rounded text-sm font-medium transition-all flex items-center gap-2 ${raisedHands.has(room.localParticipant.identity) ? 'bg-yellow-500 text-black' : 'bg-neutral-800 text-zinc-400 hover:bg-neutral-700'}`}
+                >
+                    {raisedHands.has(room.localParticipant.identity) ? '✋ Lower Hand' : '✋ Raise Hand'}
+                </button>
+
+                <button
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className={`ml-4 px-3 py-2 rounded text-sm font-medium ${isSidebarOpen ? 'bg-indigo-600 text-white' : 'bg-neutral-800 text-zinc-400 hover:bg-neutral-700'}`}
                 >
@@ -389,7 +464,7 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
     )
 }
 
-function ParticipantList({ role, roomName }: { role: string | null, roomName: string }) {
+function ParticipantList({ role, roomName, raisedHands }: { role: string | null, roomName: string, raisedHands: Set<string> }) {
     const participants = useParticipants()
 
     return (
@@ -397,8 +472,15 @@ function ParticipantList({ role, roomName }: { role: string | null, roomName: st
             {participants.map(p => (
                 <div key={p.identity} className="flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors group">
                     <div className="flex items-center gap-3 overflow-hidden">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${p.isSpeaking ? 'bg-green-600 text-white ring-2 ring-green-400' : 'bg-neutral-700 text-neutral-300'}`}>
-                            {p.name?.[0]?.toUpperCase() || p.identity?.[0]?.toUpperCase()}
+                        <div className="relative">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${p.isSpeaking ? 'bg-green-600 text-white ring-2 ring-green-400' : 'bg-neutral-700 text-neutral-300'}`}>
+                                {p.name?.[0]?.toUpperCase() || p.identity?.[0]?.toUpperCase()}
+                            </div>
+                            {raisedHands.has(p.identity) && (
+                                <div className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[10px] rounded-full w-4 h-4 flex items-center justify-center border border-black animate-bounce">
+                                    ✋
+                                </div>
+                            )}
                         </div>
                         <div className="flex flex-col">
                             <span className="text-sm text-neutral-200 truncate max-w-[120px] font-medium">
@@ -410,6 +492,7 @@ function ParticipantList({ role, roomName }: { role: string | null, roomName: st
 
                     <div className="flex items-center gap-2">
                         {p.isSpeaking && <span className="text-xs">🔊</span>}
+                        {raisedHands.has(p.identity) && <span className="text-sm">✋</span>}
 
                         {!p.isLocal && role === 'host' && (
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -15,9 +15,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { getBunnyVideoMetadata, listBunnyLibraries } from "@/server/bunny-actions"
 import BunnyLibraryPicker from "@/components/bunny-library-picker"
 import { BunnyUploader } from "@/components/bunny-uploader"
+import { Loader2 } from "lucide-react"
 
 import { VideoPackage } from "@/server/package-actions"
 import { useEffect } from "react"
+import { generateProfessionalThumbnail } from "@/server/ai-actions"
 
 const gradeOptions = [
   { label: "First year", value: 1 },
@@ -78,6 +80,8 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
   const [metaDurationSec, setMetaDurationSec] = useState<number | undefined>(undefined)
   const [metaFetched, setMetaFetched] = useState(false)
 
+  const [aiProvider, setAiProvider] = useState<"pollinations" | "getimg" | "gemini">("pollinations")
+
   function toggleGrade(val: number) {
     setGrades((prev) => (prev.includes(val) ? prev.filter((g) => g !== val) : [...prev, val]))
   }
@@ -128,6 +132,63 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
       }
       toast({ title: "Fetched from Bunny", description: "Title and duration were imported." })
     })
+  }
+
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false)
+
+  async function handleGenerateAiThumbnail() {
+    if (!title && !description) {
+      toast({ title: "Context required", description: "Please enter a title or description first.", variant: "destructive" })
+      return
+    }
+
+    setIsGeneratingAi(true)
+    const providerLabel = aiProvider === "pollinations" ? "Fast & Free AI" : "Professional Fooocus AI"
+    toast({ title: "AI Generation", description: `Starting ${providerLabel}...` })
+
+    try {
+      // 1. Call Server Action
+      const contextText = `${title}. ${description}`
+      const result = await generateProfessionalThumbnail(contextText, aiProvider)
+
+      if (!result.ok || !result.imageBase64) {
+        if (result.error === "QUOTA_EXCEEDED") {
+          toast({
+            title: "Credits Exhausted",
+            description: "Your professional credits are out. Please switch the AI model to 'Fast & Free AI' on the left to continue.",
+            variant: "destructive"
+          })
+          setIsGeneratingAi(false)
+          return
+        }
+        throw new Error(result.error || "Generation failed")
+      }
+
+      // 2. Convert base64 to File and upload to local storage
+      const blobRes = await fetch(`data:image/jpeg;base64,${result.imageBase64}`)
+      const blob = await blobRes.blob()
+
+
+      // 3. Convert blob to File and upload to local storage
+      const file = new File([blob], `ai-thumbnail-${Date.now()}.jpg`, { type: "image/jpeg" })
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData })
+      const uploadData = await uploadRes.json()
+
+      if (uploadData.ok && uploadData.url) {
+        setThumbnailUrl(uploadData.url)
+        toast({ title: "Generated", description: "Professional AI Thumbnail ready!" })
+      } else {
+        throw new Error(uploadData.error || "Upload failed")
+      }
+    } catch (error: any) {
+      console.error("AI Gen Error:", error)
+      toast({ title: "Generation Failed", description: "Could not generate or save the AI image. Please try again.", variant: "destructive" })
+    } finally {
+      setIsGeneratingAi(false)
+    }
   }
 
   return (
@@ -218,7 +279,37 @@ export function TeacherVideoForm({ packages }: { packages: VideoPackage[] }) {
       </div>
 
       <div className="space-y-2">
-        <Label>Thumbnail</Label>
+        <div className="flex items-center justify-between">
+          <Label>Thumbnail</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-emerald-600 hover:text-emerald-500 hover:bg-emerald-50"
+            disabled={isGeneratingAi}
+            onClick={handleGenerateAiThumbnail}
+          >
+            {isGeneratingAi ? (
+              <>
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              "✨ Generate with AI"
+            )}
+          </Button>
+
+          <Select value={aiProvider} onValueChange={(v: any) => setAiProvider(v)}>
+            <SelectTrigger className="w-[140px] h-8 text-[10px] bg-slate-900 border-slate-700">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pollinations">Fast & Free AI</SelectItem>
+              <SelectItem value="getimg">Professional (Fooocus)</SelectItem>
+              <SelectItem value="gemini">Gemini Enhanced AI</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <ThumbnailUpload value={thumbnailUrl} onChange={setThumbnailUrl} />
         <p className="text-xs text-muted-foreground">This image will be used as the video thumbnail.</p>
       </div>

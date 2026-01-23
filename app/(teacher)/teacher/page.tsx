@@ -23,7 +23,8 @@ import { getTeacherPhotos } from "@/server/photo-queries"
 import Image from "next/image"
 
 export default async function TeacherPage() {
-  const sessionId = cookies().get("session_id")?.value
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get("session_id")?.value
   const me = await getCurrentUser(sessionId)
 
   if (!me || me.role !== "teacher") {
@@ -90,236 +91,226 @@ export default async function TeacherPage() {
   }
 
   return (
-    <main id="top">
-      <SiteHeader />
-      <SidebarProvider>
-        <TeacherAppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold">Teacher Studio</h1>
-              <Badge variant="outline" className="rounded">
-                Welcome, {initial.name || "Teacher"}
-              </Badge>
-            </div>
-          </header>
+    <div className="mx-auto w-full max-w-6xl p-4 sm:p-6 lg:p-8 space-y-8">
+      {/* Page Header (Internal to content) */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Teacher Studio</h1>
+          <p className="text-muted-foreground mt-1">
+            Welcome back, <span className="text-emerald-600 font-semibold">{initial.name || "Teacher"}</span>. Manage your classroom and content.
+          </p>
+        </div>
+      </div>
+      {/* Dashboard */}
+      <section className="grid gap-4" aria-labelledby="dashboard">
+        <h2 id="dashboard" className="text-xl font-semibold">
+          Dashboard
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Your Students</CardTitle>
+            </CardHeader>
+            <CardContent className="text-3xl font-semibold">{studentsCount}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Your Videos</CardTitle>
+            </CardHeader>
+            <CardContent className="text-3xl font-semibold">{videosCount}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Next Live (Scheduled)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {nextLive[0] ? (
+                <div>
+                  <p className="font-medium">{nextLive[0].title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(nextLive[0].start_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No upcoming sessions</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
-          <div className="mx-auto w-full max-w-6xl p-4">
-            {/* Dashboard */}
-            <section className="grid gap-4" aria-labelledby="dashboard">
-              <h2 id="dashboard" className="text-xl font-semibold">
-                Dashboard
-              </h2>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Your Students</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-3xl font-semibold">{studentsCount}</CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Your Videos</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-3xl font-semibold">{videosCount}</CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Next Live (Scheduled)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {nextLive[0] ? (
-                      <div>
-                        <p className="font-medium">{nextLive[0].title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(nextLive[0].start_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No upcoming sessions</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </section>
+      <Separator className="my-6" />
 
-            <Separator className="my-6" />
+      {/* Go Live Now */}
+      <section id="live" className="grid gap-2" aria-labelledby="live-title">
+        <h2 id="live-title" className="text-xl font-semibold">
+          Go Live Now
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Paste any live link (Zoom, YouTube, etc.) and activate. Students will see a “Live Now” banner with your
+          join link.
+        </p>
+        <Card className="mt-2">
+          <CardContent className="pt-6">
+            <TeacherGoLive packages={packages} />
+          </CardContent>
+        </Card>
+      </section>
 
-            {/* Go Live Now */}
-            <section id="live" className="grid gap-2" aria-labelledby="live-title">
-              <h2 id="live-title" className="text-xl font-semibold">
-                Go Live Now
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Paste any live link (Zoom, YouTube, etc.) and activate. Students will see a “Live Now” banner with your
-                join link.
-              </p>
-              <Card className="mt-2">
-                <CardContent className="pt-6">
-                  <TeacherGoLive packages={packages} />
-                </CardContent>
-              </Card>
-            </section>
+      <Separator className="my-6" />
 
-            <Separator className="my-6" />
+      {/* Schedule Live Session */}
+      <section id="schedule-live" className="grid gap-2" aria-labelledby="schedule-live-title">
+        <h2 id="schedule-live-title" className="text-xl font-semibold">
+          Scheduled Live Sessions
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Schedule a future live session. Students will be notified and will see it in their dashboard.
+        </p>
+        <div className="mt-2">
+          <TeacherLiveScheduler initialSessions={scheduledSessions} packages={packages} />
+        </div>
+      </section>
 
-            {/* Schedule Live Session */}
-            <section id="schedule-live" className="grid gap-2" aria-labelledby="schedule-live-title">
-              <h2 id="schedule-live-title" className="text-xl font-semibold">
-                Scheduled Live Sessions
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Schedule a future live session. Students will be notified and will see it in their dashboard.
-              </p>
-              <div className="mt-2">
-                <TeacherLiveScheduler initialSessions={scheduledSessions} packages={packages} />
-              </div>
-            </section>
+      <Separator className="my-6" />
 
-            <Separator className="my-6" />
+      {/* Upload */}
+      <section id="upload" className="grid gap-2" aria-labelledby="upload-title">
+        <h2 id="upload-title" className="text-xl font-semibold">
+          Upload Video
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Choose a title, category, grades, and package. Free videos appear on the homepage automatically.
+        </p>
+        <Card className="mt-2">
+          <CardContent className="pt-6">
+            <TeacherVideoForm packages={packages} />
+          </CardContent>
+        </Card>
+      </section>
 
-            {/* Upload */}
-            <section id="upload" className="grid gap-2" aria-labelledby="upload-title">
-              <h2 id="upload-title" className="text-xl font-semibold">
-                Upload Video
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Choose a title, category, grades, and package. Free videos appear on the homepage automatically.
-              </p>
-              <Card className="mt-2">
-                <CardContent className="pt-6">
-                  <TeacherVideoForm packages={packages} />
-                </CardContent>
-              </Card>
-            </section>
+      <Separator className="my-6" />
 
-            <Separator className="my-6" />
+      {/* My Videos */}
+      <section id="my-videos" className="grid gap-2" aria-labelledby="my-videos-title">
+        <h2 id="my-videos-title" className="text-xl font-semibold">
+          Your Videos
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          The videos you have uploaded. Click Edit to update the title, description, or link.
+        </p>
+        <div className="mt-2">
+          <TeacherVideosManager />
+        </div>
+      </section>
 
-            {/* My Videos */}
-            <section id="my-videos" className="grid gap-2" aria-labelledby="my-videos-title">
-              <h2 id="my-videos-title" className="text-xl font-semibold">
-                Your Videos
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                The videos you have uploaded. Click Edit to update the title, description, or link.
-              </p>
-              <div className="mt-2">
-                <TeacherVideosManager />
-              </div>
-            </section>
+      <Separator className="my-6" />
 
-            <Separator className="my-6" />
+      {/* Photos */}
+      <section id="photos" className="grid gap-2" aria-labelledby="photos-title">
+        <h2 id="photos-title" className="text-xl font-semibold">
+          Photos
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Upload images that will appear on your profile and in the Photos page. Include an optional caption.
+        </p>
+        <Card className="mt-2">
+          <CardContent className="pt-6">
+            <TeacherPhotoUpload />
+          </CardContent>
+        </Card>
 
-            {/* Photos */}
-            <section id="photos" className="grid gap-2" aria-labelledby="photos-title">
-              <h2 id="photos-title" className="text-xl font-semibold">
-                Photos
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Upload images that will appear on your profile and in the Photos page. Include an optional caption.
-              </p>
-              <Card className="mt-2">
-                <CardContent className="pt-6">
-                  <TeacherPhotoUpload />
-                </CardContent>
-              </Card>
-
-              <div className="mt-4">
-                {photos.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">You haven’t uploaded any photos yet.</p>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {photos.map((p) => (
-                      <div
-                        key={p.id}
-                        className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
-                      >
-                        <div className="aspect-square relative bg-muted">
-                          <Image
-                            src={p.url || "/placeholder.svg"}
-                            alt={p.caption || "Teacher photo"}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 1024px) 50vw, 33vw"
-                          />
-                        </div>
-                        <div className="p-3">
-                          {p.caption ? (
-                            <p className="text-sm">{p.caption}</p>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">No caption</p>
-                          )}
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {new Date(p.created_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+        <div className="mt-4">
+          {photos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">You haven’t uploaded any photos yet.</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {photos.map((p) => (
+                <div
+                  key={p.id}
+                  className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
+                >
+                  <div className="aspect-square relative bg-muted">
+                    <Image
+                      src={p.url || "/placeholder.svg"}
+                      alt={p.caption || "Teacher photo"}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 50vw, 33vw"
+                    />
                   </div>
-                )}
-              </div>
-            </section>
+                  <div className="p-3">
+                    {p.caption ? (
+                      <p className="text-sm">{p.caption}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No caption</p>
+                    )}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {new Date(p.created_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
-            <Separator className="my-6" />
+      <Separator className="my-6" />
 
-            {/* Students */}
-            <section id="students" className="grid gap-2" aria-labelledby="students-title">
-              <h2 id="students-title" className="text-xl font-semibold">
-                Create Student
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Register a student with grade and phone numbers. You’ll get a username and password to share.
-              </p>
-              <Card className="mt-2">
-                <CardContent className="pt-6">
-                  <CreateStudentForm packages={packages} />
-                </CardContent>
-              </Card>
+      {/* Students */}
+      <section id="students" className="grid gap-2" aria-labelledby="students-title">
+        <h2 id="students-title" className="text-xl font-semibold">
+          Create Student
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Register a student with grade and phone numbers. You’ll get a username and password to share.
+        </p>
+        <Card className="mt-2">
+          <CardContent className="pt-6">
+            <CreateStudentForm packages={packages} />
+          </CardContent>
+        </Card>
 
-              <div className="mt-6">
-                <TeacherStudentsManager packages={packages} />
-              </div>
-            </section>
+        <div className="mt-6">
+          <TeacherStudentsManager packages={packages} />
+        </div>
+      </section>
 
-            <Separator className="my-6" />
+      <Separator className="my-6" />
 
 
-            {/* QR */}
-            <section id="qr" className="grid gap-2" aria-labelledby="qr-title">
-              <h2 id="qr-title" className="text-xl font-semibold">
-                QR Login
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Generate a one-time QR for a student to scan and be logged into their account immediately.
-              </p>
-              <Card className="mt-2">
-                <CardContent className="pt-6">
-                  <GenerateStudentQr />
-                </CardContent>
-              </Card>
-            </section>
+      {/* QR */}
+      <section id="qr" className="grid gap-2" aria-labelledby="qr-title">
+        <h2 id="qr-title" className="text-xl font-semibold">
+          QR Login
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Generate a one-time QR for a student to scan and be logged into their account immediately.
+        </p>
+        <Card className="mt-2">
+          <CardContent className="pt-6">
+            <GenerateStudentQr />
+          </CardContent>
+        </Card>
+      </section>
 
-            <Separator className="my-6" />
+      <Separator className="my-6" />
 
-            {/* Settings */}
-            <section id="settings" className="grid gap-2" aria-labelledby="settings-title">
-              <h2 id="settings-title" className="text-xl font-semibold">
-                Profile Settings
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Update your name, subject, phone number, photo, description, and color theme.
-              </p>
-              <Card className="mt-2">
-                <CardContent className="pt-6">
-                  <TeacherSettingsForm initial={initial} />
-                </CardContent>
-              </Card>
-            </section>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </main>
+      {/* Settings */}
+      <section id="settings" className="grid gap-2" aria-labelledby="settings-title">
+        <h2 id="settings-title" className="text-xl font-semibold">
+          Profile Settings
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Update your name, subject, phone number, photo, description, and color theme.
+        </p>
+        <Card className="mt-2">
+          <CardContent className="pt-6">
+            <TeacherSettingsForm initial={initial} />
+          </CardContent>
+        </Card>
+      </section>
+    </div>
   )
 }

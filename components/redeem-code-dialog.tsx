@@ -16,8 +16,10 @@ import { Label } from "@/components/ui/label"
 import { Ticket, Loader2, CheckCircle2, XCircle } from "lucide-react"
 import { redeemPackageCode } from "@/server/package-code-actions"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-provider"
 
 export default function RedeemCodeDialog() {
+    const { user } = useAuth()
     const router = useRouter()
     const [open, setOpen] = useState(false)
     const [code, setCode] = useState("")
@@ -27,6 +29,8 @@ export default function RedeemCodeDialog() {
         message: string
         packageName?: string
     } | null>(null)
+
+    if (!user) return null
 
     const handleCodeChange = (value: string) => {
         let formatted = value.toUpperCase().replace(/[^A-Z0-9]/g, "")

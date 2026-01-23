@@ -23,9 +23,10 @@ type UploadVideoInput = {
   packageId: string
   isFree: boolean
   thumbnailUrl?: string
-  sourceType: "gdrive" | "youtube" | "vimeo" | "bunny" | "bunny_id"
+  sourceType: "gdrive" | "youtube" | "vimeo" | "bunny" | "bunny_id" | "bunny_upload"
   directPlayUrl?: string
-  maxWatchCount?: number // عدد المشاهدات المسموح بها (افتراضي 3)
+  bunnyLibraryId?: string
+  maxWatchCount?: number
   watchLimitEnabled?: boolean // تفعيل/تعطيل حد المشاهدات (افتراضي true)
 }
 

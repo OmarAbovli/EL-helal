@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 
 type Props = {
@@ -20,6 +20,11 @@ export function ThumbnailUpload({
   const [preview, setPreview] = useState<string>(value)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Update preview when value changes externally (e.g. from AI)
+  useEffect(() => {
+    setPreview(value)
+  }, [value])
 
   async function handleFile(file: File) {
     setError(null)

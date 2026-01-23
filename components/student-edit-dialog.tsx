@@ -143,15 +143,16 @@ export default function StudentEditDialog({
           </div>
 
           <div className="grid gap-2">
-            <div className="text-sm font-medium">Access Packages</div>
-            <div className="flex flex-wrap gap-2">
+            <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Access Packages</div>
+            <div className="grid grid-cols-2 gap-3 rounded-md border p-3 bg-muted/30">
               {packages.map((p) => (
-                <label key={p.id} className="flex items-center gap-1 text-xs">
+                <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded transition-colors">
                   <Checkbox
+                    id={`pkg-${student.id}-${p.id}`}
                     checked={selectedPackageIds.includes(p.id)}
                     onCheckedChange={() => togglePackage(p.id)}
                   />
-                  <span>{p.name}</span>
+                  <span className="truncate">{p.name}</span>
                 </label>
               ))}
             </div>

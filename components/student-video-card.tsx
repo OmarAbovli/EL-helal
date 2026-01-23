@@ -1,12 +1,12 @@
-'use client'
-
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import ProfessionalVideoPlayer from '@/components/professional-video-player'
 import { Play } from 'lucide-react'
 import { isYouTubeUrl, toYouTubeEmbed } from '@/lib/youtube'
 import { isVimeoUrl, normalizeVimeoInput, extractVimeoEmbedSrc } from '@/lib/vimeo'
 import { isBunnyUrl, normalizeBunnyInput, isBunnyEmbedUrl, extractBunnyEmbedSrc } from '@/lib/bunny'
+import RedeemCodeDialog from '@/components/redeem-code-dialog'
+import { useAuth } from '@/lib/auth-provider'
 
 type Props = {
   id?: string
@@ -25,6 +25,7 @@ export default function StudentVideoCard({
   watermarkText = '',
   antiDownload = false,
 }: Props) {
+  const { user } = useAuth()
   const [playing, setPlaying] = useState(false)
 
   const { kind, embedSrc } = useMemo(() => {
@@ -59,10 +60,11 @@ export default function StudentVideoCard({
 
   return (
     <div className="group transition-all hover:shadow-md rounded-md border overflow-hidden">
-      <div className="p-4">
+      <div className="p-4 flex items-center justify-between">
         <Link href={`/watch/${id}`}>
           <div className="text-base font-medium hover:underline">{title}</div>
         </Link>
+        <RedeemCodeDialog />
       </div>
 
       <div className="px-4 pb-4">

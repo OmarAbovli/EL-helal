@@ -135,10 +135,14 @@ function buildThumbUrl(libraryId: string, item: BunnyVideoApiItem) {
 
 // -- Actions --
 
-export async function createBunnyVideo(title: string) {
+export async function createBunnyVideo(title: string, targetLibraryId?: string) {
   const config = await getBunnyConfig()
   if (!config) return { ok: false, error: "Bunny.net not configured" }
-  const { apiKey, libraryId } = config
+
+  const apiKey = config.apiKey
+  const libraryId = targetLibraryId || config.libraryId
+
+  if (!apiKey || !libraryId) return { ok: false, error: "Missing Bunny API Key or Library ID" }
 
   try {
     const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos`, {
@@ -157,7 +161,7 @@ export async function createBunnyVideo(title: string) {
     }
 
     const data = await res.json()
-    return { ok: true, guid: data.guid, libraryId } // Return libraryId needed for playback URL construction
+    return { ok: true, guid: data.guid, libraryId, apiKey }
   } catch (e: any) {
     return { ok: false, error: e.message }
   }
@@ -184,7 +188,7 @@ export async function listBunnyVideos(params?: {
   if (search) url.searchParams.set("search", search)
 
   const res = await fetch(url.toString(), {
-    headers: { accept: "application/json", AccessKey: apiKey },
+    headers: { accept: "application/json", AccessKey: apiKey! },
     cache: "no-store",
   })
 
@@ -196,9 +200,9 @@ export async function listBunnyVideos(params?: {
   const data = (await res.json()) as BunnyListResponse
 
   const items = data.items.map((it) => {
-    const embedUrl = buildBunnyEmbedUrl(libraryId, it.guid)
-    const hlsUrl = buildBunnyHlsUrl(libraryId, it.guid)
-    const thumbnailUrl = buildThumbUrl(libraryId, it)
+    const embedUrl = buildBunnyEmbedUrl(libraryId!, it.guid)
+    const hlsUrl = buildBunnyHlsUrl(libraryId!, it.guid)
+    const thumbnailUrl = buildThumbUrl(libraryId!, it)
     return {
       id: it.guid,
       title: it.title,
@@ -221,7 +225,7 @@ export async function listBunnyVideos(params?: {
 
 export async function getBunnyVideoMetadata(videoId: string): Promise<MetaResult> {
   const config = await getBunnyConfig()
-  if (!config) {
+  if (!config || !config.apiKey || !config.libraryId) {
     return { ok: false, error: "Bunny API credentials are not configured." }
   }
   const { libraryId, apiKey } = config
