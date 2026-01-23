@@ -168,6 +168,7 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                         thumbnailUrl={v.thumbnail_url || "/course-thumbnail.png"}
                         watermarkText={user.name ? `${user.name} • ${user.id}` : user.id}
                         antiDownload
+                        hideRedeem={true}
                       />
                     ))}
                     {pkg.videos.length === 0 && (

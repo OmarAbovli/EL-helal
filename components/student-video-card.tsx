@@ -17,6 +17,7 @@ type Props = {
   thumbnailUrl?: string
   watermarkText?: string
   antiDownload?: boolean
+  hideRedeem?: boolean
 }
 
 export default function StudentVideoCard({
@@ -26,6 +27,7 @@ export default function StudentVideoCard({
   thumbnailUrl = '/video-thumbnail.png',
   watermarkText = '',
   antiDownload = false,
+  hideRedeem = false,
 }: Props) {
   const { user } = useAuth()
   const [playing, setPlaying] = useState(false)
@@ -66,7 +68,7 @@ export default function StudentVideoCard({
         <Link href={`/watch/${id}`}>
           <div className="text-base font-medium hover:underline">{title}</div>
         </Link>
-        <RedeemCodeDialog />
+        {!hideRedeem && <RedeemCodeDialog />}
       </div>
 
       <div className="px-4 pb-4">
