@@ -1,9 +1,9 @@
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser } from "../../../../../lib/auth"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { sql } from "@/server/db"
+import { sql } from "../../../../../server/db"
 import GenerateCodesClientPage from "./generate-client"
-import SiteHeader from "@/components/site-header"
+import SiteHeader from "../../../../../components/site-header"
 
 export const metadata = {
     title: "توليد أكواد جديدة | Competooo",

@@ -1,18 +1,18 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "./ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
+import { Input } from "./ui/input"
+import { Label } from "./ui/label"
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
-import { generatePackageCodes } from "@/server/package-code-actions"
+} from "./ui/select"
+import { generatePackageCodes } from "../server/package-code-actions"
 import { Loader2, Ticket } from "lucide-react"
 import { toast } from "sonner"
 
@@ -24,7 +24,7 @@ type Package = {
 
 type GenerateCodesFormProps = {
     packages: Package[]
-    onCodesGenerated: (codes: Array<{ id: string; code: string }>) => void
+    onCodesGenerated: (codes: Array<{ id: string; code: string; packageId: string; grade: number }>) => void
 }
 
 export default function GenerateCodesForm({ packages, onCodesGenerated }: GenerateCodesFormProps) {
@@ -61,7 +61,11 @@ export default function GenerateCodesForm({ packages, onCodesGenerated }: Genera
 
                 if (result.success && result.codes) {
                     toast.success(`تم توليد ${result.codes.length} كود بنجاح!`)
-                    onCodesGenerated(result.codes)
+                    onCodesGenerated(result.codes.map(c => ({
+                        ...c,
+                        packageId: selectedPackageId,
+                        grade: parseInt(selectedGrade)
+                    })))
 
                     // Reset form
                     setCount("10")

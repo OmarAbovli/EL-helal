@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import GenerateCodesForm from "@/components/generate-codes-form"
-import CodeCardPrintable from "@/components/code-card-printable"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import GenerateCodesForm from "../../../../../components/generate-codes-form"
+import CodeCardPrintable from "../../../../../components/code-card-printable"
+import { Button } from "../../../../../components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../../../components/ui/card"
 import { ArrowLeft, Printer } from "lucide-react"
 import Link from "next/link"
 

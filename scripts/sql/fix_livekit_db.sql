@@ -59,5 +59,5 @@ CREATE INDEX IF NOT EXISTS idx_voice_call_participants_user ON voice_call_partic
 -- Success Message
 DO $$
 BEGIN
-    RAISE NOTICE '✅ LiveKit Database Schema Fixed Successfully!';
+    RAISE NOTICE ' LiveKit Database Schema Fixed Successfully';
 END $$;
