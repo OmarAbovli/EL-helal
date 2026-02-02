@@ -1,6 +1,8 @@
 import { getTeacherPackages } from "@/server/package-actions"
 import { TeacherPackagesManager } from "@/components/teacher-packages-manager"
 
+export const dynamic = "force-dynamic"
+
 export default async function TeacherPackagesPage() {
   const packages = await getTeacherPackages()
 

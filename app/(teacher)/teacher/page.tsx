@@ -1,5 +1,7 @@
 import { cookies } from "next/headers"
 import SiteHeader from "@/components/site-header"
+
+export const dynamic = "force-dynamic"
 import { TeacherVideoForm } from "@/components/teacher-video-form"
 import { CreateStudentForm } from "@/components/create-student-form"
 import TeacherStudentsManager from "@/components/teacher-students-manager"

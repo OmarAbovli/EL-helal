@@ -1,5 +1,7 @@
 import { getLeaderboard, getStudentXPStatus } from "@/server/xp-actions"
 import SiteHeader from "@/components/site-header"
+
+export const dynamic = "force-dynamic"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -35,8 +37,8 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
                             key={g || 'all'}
                             href={g ? `/student/leaderboard?grade=${g}` : '/student/leaderboard'}
                             className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${(selectedGrade === g)
-                                    ? 'bg-primary text-primary-foreground shadow-md'
-                                    : 'bg-background hover:bg-muted'
+                                ? 'bg-primary text-primary-foreground shadow-md'
+                                : 'bg-background hover:bg-muted'
                                 }`}
                         >
                             {g ? `الصف ${g}` : 'الكل'}

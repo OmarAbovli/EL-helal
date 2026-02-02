@@ -1,6 +1,8 @@
 import { BulkStudentForm } from "@/components/bulk-student-form"
 import { getTeacherPackages } from "@/server/package-actions"
 
+export const dynamic = "force-dynamic"
+
 export default async function BulkStudentsPage() {
     const packages = await getTeacherPackages()
 

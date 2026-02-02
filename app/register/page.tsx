@@ -5,6 +5,8 @@ import { GraduationCap, Sparkles, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { getAvailableTeachers } from "@/server/teacher-list-actions"
 
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
     title: "Create Your Account - Join Competooo",
     description: "Create your free student account and start your learning journey with Competooo",

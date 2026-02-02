@@ -1,5 +1,7 @@
 import { Suspense } from "react"
 import SiteHeader from "@/components/site-header"
+
+export const dynamic = "force-dynamic"
 import { cookies } from "next/headers"
 import Link from "next/link"
 import StudentVideoCard from "@/components/student-video-card"

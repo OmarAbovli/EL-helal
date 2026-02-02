@@ -1,5 +1,7 @@
 import { getTeacherQrTokens } from "@/server/qr-actions"
 import { QrManagementTable } from "@/components/qr-management-table"
+
+export const dynamic = "force-dynamic"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, QrCode } from "lucide-react"
 import Link from "next/link"
