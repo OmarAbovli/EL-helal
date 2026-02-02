@@ -104,26 +104,24 @@ export async function getLeaderboard(params?: { grade?: number, limit?: number }
     try {
         const { grade, limit = 20 } = params || {}
 
-        let query = sql`
-      SELECT 
-        id, 
-        name, 
-        username, 
-        xp, 
-        level, 
-        grade,
-        streak_count
-      FROM users
-      WHERE role = 'student'
-    `
-
+        let rows: any[] = []
         if (grade) {
-            query = sql`${query} AND grade = ${grade}`
+            rows = await sql`
+                SELECT id, name, username, xp, level, grade, streak_count
+                FROM users
+                WHERE role = 'student' AND grade = ${grade}
+                ORDER BY xp DESC
+                LIMIT ${limit}
+            ` as any[]
+        } else {
+            rows = await sql`
+                SELECT id, name, username, xp, level, grade, streak_count
+                FROM users
+                WHERE role = 'student'
+                ORDER BY xp DESC
+                LIMIT ${limit}
+            ` as any[]
         }
-
-        query = sql`${query} ORDER BY xp DESC LIMIT ${limit}`
-
-        const rows = await query as any[]
 
         return { success: true, leaderboard: rows }
     } catch (error) {
