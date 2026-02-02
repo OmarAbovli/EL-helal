@@ -28,60 +28,81 @@ export function XPProgressCard({ xp, level, percentage, nextLevelXP, streakCount
     const levelName = getLevelName(level)
 
     return (
-        <Card className="overflow-hidden border-none shadow-lg bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white">
-            <CardContent className="p-6 relative">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Trophy className="h-24 w-24" />
-                </div>
+        <Card className="overflow-hidden border-none shadow-2xl bg-[#0f172a] text-white relative group">
+            {/* Dynamic Background Gradient Blob */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 blur-[100px] rounded-full group-hover:bg-indigo-500/30 transition-colors duration-700" />
+            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-pink-600/10 blur-[100px] rounded-full group-hover:bg-pink-500/20 transition-colors duration-700" />
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                    <div className="space-y-4 flex-1">
-                        <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
-                                <span className="text-xl font-black">{level}</span>
+            <CardContent className="p-0 relative z-10">
+                <div className="flex flex-col lg:flex-row">
+                    {/* Left Section: Level & Badge */}
+                    <div className="p-6 flex flex-col items-center justify-center bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10 min-w-[200px] backdrop-blur-sm">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 animate-pulse" />
+                            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl border border-white/20 relative z-10 transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                <span className="text-4xl font-black italic tracking-tighter">{level}</span>
                             </div>
-                            <div>
-                                <p className="text-xs font-bold uppercase tracking-widest text-white/70">المستوى الحالي</p>
+                        </div>
+                        <div className="mt-4 text-center">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300 mb-1">المرحلة الحالية</p>
+                            <h2 className="text-xl font-black bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">{levelName}</h2>
+                        </div>
+                    </div>
+
+                    {/* Middle Section: Progress */}
+                    <div className="p-6 flex-1 space-y-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                    <h2 className="text-2xl font-black">{levelName}</h2>
-                                    <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" />
+                                    <Zap className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                                    <span className="text-2xl font-black tabular-nums">{xp.toLocaleString()}</span>
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-widest">XP Total</span>
+                                </div>
+                                <p className="text-xs text-white/50 font-medium">
+                                    يتبقى لك <span className="text-white font-bold">{Math.round(nextLevelXP - xp)} XP</span> للوصول للمستوى التالي
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <div className="flex flex-col items-end">
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">الترتيب</p>
+                                    <p className="text-lg font-black text-emerald-400">#{rank || '--'}</p>
+                                </div>
+                                <div className="h-8 w-px bg-white/10 mx-2" />
+                                <div className="flex flex-col items-end">
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">السلسلة</p>
+                                    <p className="text-lg font-black text-orange-500">🔥 {streakCount}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-end">
-                                <p className="text-sm font-bold flex items-center gap-1">
-                                    <Zap className="h-4 w-4 fill-current text-yellow-300" />
-                                    {xp} <span className="text-white/70 font-normal">إجمالي النقاط</span>
-                                </p>
-                                <p className="text-xs font-medium text-white/70">
-                                    {Math.round(nextLevelXP - xp)} XP للمستوى {level + 1}
-                                </p>
-                            </div>
-                            <div className="relative h-3 w-full bg-black/20 rounded-full overflow-hidden border border-white/10">
+                        <div className="space-y-3">
+                            <div className="relative h-4 w-full bg-white/5 rounded-full p-1 border border-white/10 overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${percentage}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }}
-                                    className="h-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"
-                                />
+                                    transition={{ duration: 1.5, ease: "circOut" }}
+                                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative"
+                                >
+                                    {/* Scanline effect on progress */}
+                                    <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] w-20 animate-[shimmer_2s_infinite]" />
+                                </motion.div>
+                            </div>
+                            <div className="flex justify-between text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">
+                                <span>LVL {level}</span>
+                                <span>LVL {level + 1}</span>
                             </div>
                         </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-white/20 hover:bg-white/30 border-none text-white backdrop-blur-sm px-3 py-1">
-                            🔥 {streakCount} يوم متواصل
-                        </Badge>
-                        {rank && (
-                            <Badge className="bg-white/20 hover:bg-white/30 border-none text-white backdrop-blur-sm px-3 py-1">
-                                🏆 المركز #{rank}
-                            </Badge>
-                        )}
-                    </div>
                 </div>
             </CardContent>
+
+            <style jsx global>{`
+                @keyframes shimmer {
+                    from { transform: translateX(-100%); }
+                    to { transform: translateX(500%); }
+                }
+            `}</style>
         </Card>
     )
 }
