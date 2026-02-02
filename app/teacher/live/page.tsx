@@ -34,7 +34,7 @@ export default function TeacherLivePage() {
         ])
 
         if (historyRes.success) {
-            setHistory(historyRes.calls)
+            setHistory(historyRes.calls || [])
         }
         setPackages(packagesRes)
         setLoading(false)
@@ -226,6 +226,7 @@ export default function TeacherLivePage() {
                                                 <th className="p-4">الطالب</th>
                                                 <th className="p-4">وقت الدخول</th>
                                                 <th className="p-4">مدة التحدث</th>
+                                                <th className="p-4">مرات رفع اليد</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-800 bg-[#0c0c0e]">
@@ -248,6 +249,11 @@ export default function TeacherLivePage() {
                                                     <td className="p-4 font-mono">
                                                         <span className={p.speaking_duration_seconds > 0 ? "text-emerald-400" : "text-slate-600"}>
                                                             {p.speaking_duration_seconds || 0} ث
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 font-mono text-center">
+                                                        <span className={p.hand_raise_count > 0 ? "text-amber-400" : "text-slate-600"}>
+                                                            {p.hand_raise_count || 0}
                                                         </span>
                                                     </td>
                                                 </tr>

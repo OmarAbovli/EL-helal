@@ -12,12 +12,14 @@ import {
     Chat,
     FocusLayout,
     CarouselLayout,
+    ConnectionQualityIndicator,
 } from "@livekit/components-react"
 import "@livekit/components-styles"
 import { Track, RoomEvent, DataPacket_Kind } from "livekit-client"
 import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { muteParticipant, removeParticipant, endRoom, getCallReport, saveCallStats } from "@/server/livekit-actions"
+import { useToast } from "@/hooks/use-toast"
+import { muteParticipant, removeParticipant, endRoom, getCallReport, saveCallStats, muteAllParticipants } from "@/server/livekit-actions"
 
 export function VideoRoom({ userId, userName }: { userId?: string, userName?: string }) {
     const router = useRouter()
@@ -70,7 +72,7 @@ export function VideoRoom({ userId, userName }: { userId?: string, userName?: st
     return (
         <LiveKitRoom
             video={role === 'host'}
-            audio={true}
+            audio={role === 'host'} // Students join muted by default
             token={token}
             serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
             data-lk-theme="default"
@@ -95,6 +97,8 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
     // UI State
     const [activeSidebarTab, setActiveSidebarTab] = useState<'chat' | 'participants' | 'controls'>('chat')
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [isMutingAll, setIsMutingAll] = useState(false)
+
 
     // Tracks
     const tracks = useTracks(
@@ -146,10 +150,55 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [isRecording]);
 
+    const { toast } = useToast()
+
+    // Browser Notifications Permission
+    useEffect(() => {
+        if (role === 'host' && "Notification" in window) {
+            Notification.requestPermission();
+        }
+    }, [role]);
+
     // -- Hand Raising Logic --
     const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set())
     const encoder = new TextEncoder()
     const decoder = new TextDecoder()
+
+    // -- Stats Tracking Logic --
+    const statsRef = useRef({ speakingSeconds: 0, micOpenSeconds: 0, handRaiseCount: 0 })
+    const lastHandState = useRef(false)
+
+    useEffect(() => {
+        const isRaised = raisedHands.has(room.localParticipant.identity)
+        if (isRaised && !lastHandState.current) {
+            statsRef.current.handRaiseCount++
+        }
+        lastHandState.current = isRaised
+    }, [raisedHands, room.localParticipant.identity])
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (room.localParticipant.isSpeaking) {
+                statsRef.current.speakingSeconds++
+            }
+            if (room.localParticipant.isMicrophoneEnabled) {
+                statsRef.current.micOpenSeconds++
+            }
+        }, 1000)
+
+        const syncInterval = setInterval(async () => {
+            if (statsRef.current.speakingSeconds > 0 || statsRef.current.micOpenSeconds > 0 || statsRef.current.handRaiseCount > 0) {
+                const toSend = { ...statsRef.current }
+                statsRef.current = { speakingSeconds: 0, micOpenSeconds: 0, handRaiseCount: 0 }
+                await saveCallStats(roomName, room.localParticipant.identity, toSend)
+            }
+        }, 30000)
+
+        return () => {
+            clearInterval(interval)
+            clearInterval(syncInterval)
+        }
+    }, [room.localParticipant, roomName])
 
     useEffect(() => {
         const onDataReceived = (payload: Uint8Array, participant: any) => {
@@ -186,6 +235,41 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
             return next
         })
     }
+
+    // -- Global Notifications for Host --
+    useEffect(() => {
+        if (role !== 'host') return;
+
+        const onDataReceived = (payload: Uint8Array, participant: any) => {
+            const str = decoder.decode(payload)
+            try {
+                const data = JSON.parse(str)
+                if (data.type === 'RAISE_HAND' && data.raised) {
+                    // 1. Show Toast
+                    toast({
+                        title: "✋ رافع يد جديد",
+                        description: `${participant.identity || 'طالب'} يطلب التحدث`,
+                    })
+
+                    // 2. Native Notification if tab is hidden
+                    if (document.hidden && Notification.permission === "granted") {
+                        new Notification("LiveKit: رفع يد", {
+                            body: `${participant.identity} رفع يده الآن`,
+                            icon: "/favicon.ico"
+                        })
+                    }
+
+                    // 3. Flash Title
+                    const originalTitle = document.title;
+                    document.title = `✋ ${participant.identity} رفع يده!`;
+                    setTimeout(() => { document.title = originalTitle; }, 5000);
+                }
+            } catch (e) { }
+        }
+
+        room.on(RoomEvent.DataReceived, onDataReceived)
+        return () => { room.off(RoomEvent.DataReceived, onDataReceived) }
+    }, [room, role, toast]);
 
     async function handleStartRecording() {
         try {
@@ -339,41 +423,43 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
                             </button>
                         </div>
                     ) : (
-                        <div className="flex-1 p-2 h-full">
-                            {screenShareTrack ? (
-                                <FocusLayout trackRef={screenShareTrack} />
-                            ) : (
-                                <GridLayout tracks={tracks}>
-                                    <ParticipantTile />
-                                </GridLayout>
-                            )}
+                        <div className="flex-1 p-4 h-full overflow-hidden">
+                            <div className="h-full w-full rounded-3xl overflow-hidden shadow-2xl border border-white/5">
+                                {screenShareTrack ? (
+                                    <FocusLayout trackRef={screenShareTrack} />
+                                ) : (
+                                    <GridLayout tracks={tracks}>
+                                        <ParticipantTile />
+                                    </GridLayout>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* 2. Sidebar (Zoom-style) */}
+                {/* 2. Floating Right Sidebar - Glass Morphism */}
                 {isSidebarOpen && (
-                    <div className="w-80 bg-[#1c1c1e] border-l border-neutral-800 flex flex-col shadow-2xl z-20">
+                    <div className="absolute top-4 right-4 bottom-20 w-80 glass-panel rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
                         {/* Tabs */}
-                        <div className="flex border-b border-neutral-700 bg-[#2c2c2e]">
+                        <div className="flex p-1 bg-white/5 mx-2 mt-2 rounded-xl border border-white/5">
                             <button
                                 onClick={() => setActiveSidebarTab('chat')}
-                                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wide transition-colors ${activeSidebarTab === 'chat' ? 'text-white border-b-2 border-indigo-500 bg-[#3a3a3c]' : 'text-zinc-400 hover:text-zinc-200'}`}
+                                className={`flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${activeSidebarTab === 'chat' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                             >Chat</button>
                             <button
                                 onClick={() => setActiveSidebarTab('participants')}
-                                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wide transition-colors ${activeSidebarTab === 'participants' ? 'text-white border-b-2 border-indigo-500 bg-[#3a3a3c]' : 'text-zinc-400 hover:text-zinc-200'}`}
+                                className={`flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${activeSidebarTab === 'participants' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                             >Participants</button>
                             {role === 'host' && (
                                 <button
                                     onClick={() => setActiveSidebarTab('controls')}
-                                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-wide transition-colors ${activeSidebarTab === 'controls' ? 'text-white border-b-2 border-indigo-500 bg-[#3a3a3c]' : 'text-zinc-400 hover:text-zinc-200'}`}
+                                    className={`flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${activeSidebarTab === 'controls' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                                 >Controls</button>
                             )}
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-auto bg-[#1c1c1e]">
+                        <div className="flex-1 overflow-auto bg-transparent custom-scrollbar">
                             {activeSidebarTab === 'chat' && (
                                 <div className="h-full flex flex-col">
                                     {/* LiveKit Chat Component */}
@@ -398,6 +484,19 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
                                             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all font-medium"
                                         >
                                             ✏️ Open Whiteboard
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (confirm("Mute all students' microphones?")) {
+                                                    setIsMutingAll(true)
+                                                    await muteAllParticipants(roomName, room.localParticipant.identity)
+                                                    setIsMutingAll(false)
+                                                }
+                                            }}
+                                            disabled={isMutingAll}
+                                            className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all font-medium"
+                                        >
+                                            {isMutingAll ? '⏳ Muting...' : '🔇 Mute All Students'}
                                         </button>
                                     </div>
                                     <hr className="border-neutral-700" />
@@ -439,8 +538,8 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
                 )}
             </div>
 
-            {/* 3. Bottom Control Bar */}
-            <div className="bg-[#1c1c1e] border-t border-neutral-800 p-3 flex justify-center items-center relative gap-4">
+            {/* 3. Floating Bottom Control Bar - Glass Morphism */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 p-3 glass-panel rounded-2xl shadow-2xl z-40 transition-all hover:scale-102 backdrop-blur-2xl">
                 <ControlBar
                     variation="minimal"
                     controls={{ screenShare: true, chat: false, leave: true, camera: true, microphone: true }}
@@ -467,13 +566,33 @@ function VideoConferenceWithTools({ role, roomName, userId }: { role: string | n
 function ParticipantList({ role, roomName, raisedHands }: { role: string | null, roomName: string, raisedHands: Set<string> }) {
     const participants = useParticipants()
 
+    // Sort: Local first, then Speaking, then Raised Hand, then Alphabetical
+    const sortedParticipants = [...participants].sort((a, b) => {
+        // 1. Local (You) always first
+        if (a.isLocal) return -1;
+        if (b.isLocal) return 1;
+
+        // 2. Speaking moving up
+        if (a.isSpeaking && !b.isSpeaking) return -1;
+        if (!a.isSpeaking && b.isSpeaking) return 1;
+
+        // 3. Raised hands moving up (but below speakers)
+        const aHand = raisedHands.has(a.identity);
+        const bHand = raisedHands.has(b.identity);
+        if (aHand && !bHand) return -1;
+        if (!aHand && bHand) return 1;
+
+        // 4. Alphabetical fallback
+        return (a.identity || '').localeCompare(b.identity || '');
+    })
+
     return (
         <div className="space-y-1">
-            {participants.map(p => (
+            {sortedParticipants.map(p => (
                 <div key={p.identity} className="flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors group">
                     <div className="flex items-center gap-3 overflow-hidden">
                         <div className="relative">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${p.isSpeaking ? 'bg-green-600 text-white ring-2 ring-green-400' : 'bg-neutral-700 text-neutral-300'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${p.isSpeaking ? 'bg-indigo-600 text-white speaker-pulse' : 'bg-neutral-700 text-neutral-300'}`}>
                                 {p.name?.[0]?.toUpperCase() || p.identity?.[0]?.toUpperCase()}
                             </div>
                             {raisedHands.has(p.identity) && (
@@ -483,9 +602,12 @@ function ParticipantList({ role, roomName, raisedHands }: { role: string | null,
                             )}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm text-neutral-200 truncate max-w-[120px] font-medium">
-                                {p.identity}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-neutral-200 truncate max-w-[120px] font-medium">
+                                    {p.identity}
+                                </span>
+                                <ConnectionQualityIndicator participant={p} className="w-4 h-4 opacity-70" />
+                            </div>
                             {p.isLocal && <span className="text-[10px] text-zinc-500">You</span>}
                         </div>
                     </div>

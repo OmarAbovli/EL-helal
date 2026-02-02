@@ -22,10 +22,10 @@ export async function GET(req: NextRequest) {
         }
 
         const role = user.role === "teacher" ? "host" : "guest"
-        // Use real name, fallback to param if needed (but prefer real name)
-        const participantName = user.name || participantNameParam || "Guest"
+        const name = user.name || participantNameParam || "Guest"
+        const identity = user.id
 
-        const { token } = await createLiveKitToken(room, participantName, role)
+        const { token } = await createLiveKitToken(room, identity, role, name)
 
         // Record join in database for attendance
         try {

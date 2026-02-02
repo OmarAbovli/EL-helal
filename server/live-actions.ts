@@ -114,7 +114,7 @@ export async function setLiveStatus(input: {
 
         if (roomName) {
           // Create the session in voice_calls
-          const callId = "vc_" + randomUUID();
+          const callId = randomUUID();
           // We pick the first grade from the list as the primary grade for the call record
           const primaryGrade = input.grades && input.grades.length > 0 ? input.grades[0] : 0;
 

@@ -4,7 +4,7 @@ import { AccessToken } from "livekit-server-sdk"
 import { z } from "zod"
 import { sql } from "@/server/db"
 
-export async function createLiveKitToken(roomName: string, participantName: string, role: "host" | "guest") {
+export async function createLiveKitToken(roomName: string, identity: string, role: "host" | "guest", name?: string) {
     const apiKey = process.env.LIVEKIT_API_KEY
     const apiSecret = process.env.LIVEKIT_API_SECRET
     const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
@@ -15,7 +15,8 @@ export async function createLiveKitToken(roomName: string, participantName: stri
 
     // Create token
     const at = new AccessToken(apiKey, apiSecret, {
-        identity: participantName,
+        identity: identity,
+        name: name,
         // Token validity (e.g. 2 hours)
         ttl: 2 * 60 * 60,
     })
@@ -67,6 +68,35 @@ export async function removeParticipant(roomName: string, identity: string) {
     return { success: true }
 }
 
+// Mute all participants except the host
+export async function muteAllParticipants(roomName: string, excludeIdentity?: string) {
+    const apiKey = process.env.LIVEKIT_API_KEY
+    const apiSecret = process.env.LIVEKIT_API_SECRET
+    const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
+
+    if (!apiKey || !apiSecret || !wsUrl) throw new Error("Missing keys")
+
+    const { RoomServiceClient, TrackSource } = await import("livekit-server-sdk")
+    const svc = new RoomServiceClient(wsUrl, apiKey, apiSecret)
+
+    // 1. Get all participants
+    const participants = await svc.listParticipants(roomName)
+
+    for (const p of participants) {
+        // Skip the excluded identity (e.g., the Teacher who triggered this)
+        if (excludeIdentity && p.identity === excludeIdentity) continue;
+
+        // Find audio tracks
+        const audioTracks = p.tracks.filter(t => t.source === TrackSource.MICROPHONE)
+
+        for (const track of audioTracks) {
+            await svc.mutePublishedTrack(roomName, p.identity, track.sid, true)
+        }
+    }
+
+    return { success: true }
+}
+
 // End the room (kick everyone)
 export async function endRoom(roomName: string) {
     const apiKey = process.env.LIVEKIT_API_KEY
@@ -102,7 +132,7 @@ export async function endRoom(roomName: string) {
 
 // --- Analytics & Reporting ---
 
-export async function saveCallStats(roomName: string, userId: string, stats: { speakingSeconds: number, micOpenSeconds: number }) {
+export async function saveCallStats(roomName: string, userId: string, stats: { speakingSeconds: number, micOpenSeconds: number, handRaiseCount?: number }) {
     // In a real app, look up the call_id by room_name first
     // This assumes we can link room_name to the voice_calls table
     try {
@@ -110,7 +140,8 @@ export async function saveCallStats(roomName: string, userId: string, stats: { s
             UPDATE voice_call_participants
             SET 
                 speaking_duration_seconds = speaking_duration_seconds + ${stats.speakingSeconds},
-                mic_open_duration_seconds = mic_open_duration_seconds + ${stats.micOpenSeconds}
+                mic_open_duration_seconds = mic_open_duration_seconds + ${stats.micOpenSeconds},
+                hand_raise_count = hand_raise_count + ${stats.handRaiseCount || 0}
             WHERE 
                 user_id = ${userId} 
                 AND call_id IN (SELECT id FROM voice_calls WHERE room_name = ${roomName} LIMIT 1)
@@ -139,7 +170,8 @@ export async function getCallReport(roomName: string) {
                 u.id, u.name, u.role,
                 vcp.joined_at, vcp.left_at,
                 vcp.speaking_duration_seconds,
-                vcp.mic_open_duration_seconds
+                vcp.mic_open_duration_seconds,
+                vcp.hand_raise_count
             FROM voice_call_participants vcp
             JOIN users u ON u.id = vcp.user_id
             WHERE vcp.call_id = ${call.id}
