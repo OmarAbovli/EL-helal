@@ -1,6 +1,5 @@
 import { cookies } from "next/headers"
 import SiteHeader from "@/components/site-header"
-import { TeacherAppSidebar } from "@/components/teacher-app-sidebar"
 import { TeacherVideoForm } from "@/components/teacher-video-form"
 import { CreateStudentForm } from "@/components/create-student-form"
 import TeacherStudentsManager from "@/components/teacher-students-manager"
@@ -12,6 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
+import { QrCode } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import TeacherVideosManager from "@/components/teacher-videos-manager"
 import { TeacherGoLive } from "@/components/teacher-go-live"
 import { TeacherLiveScheduler } from "@/components/teacher-live-scheduler"
@@ -282,9 +284,17 @@ export default async function TeacherPage() {
 
       {/* QR */}
       <section id="qr" className="grid gap-2" aria-labelledby="qr-title">
-        <h2 id="qr-title" className="text-xl font-semibold">
-          QR Login
-        </h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 id="qr-title" className="text-xl font-semibold">
+            QR Login
+          </h2>
+          <Button asChild variant="outline" size="sm" className="hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 border-emerald-500/20">
+            <Link href="/teacher/qr-login" className="flex items-center gap-2">
+              <QrCode className="h-4 w-4" />
+              Manage QR Codes
+            </Link>
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
           Generate a one-time QR for a student to scan and be logged into their account immediately.
         </p>

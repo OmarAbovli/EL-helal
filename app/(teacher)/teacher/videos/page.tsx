@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Plus, Film, Trash2, Calendar, Layout, Search } from "lucide-react"
+import { ArrowLeft, Loader2, Plus, Film, Trash2, Calendar, Layout, Search, Users } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { VideoWatchersDialog } from "@/components/video-watchers-dialog"
 
 export default function TeacherVideosPage() {
     const { toast } = useToast()
@@ -59,12 +60,19 @@ export default function TeacherVideosPage() {
     return (
         <main className="mx-auto max-w-6xl p-6 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold">Videos Management</h1>
-                    <p className="text-muted-foreground">Manage your uploaded lessons and assignments.</p>
+                <div className="flex items-center gap-4">
+                    <Button asChild variant="ghost" size="icon" className="rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-emerald-600 transition-colors">
+                        <Link href="/teacher">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Link>
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold italic text-emerald-600">Videos Management</h1>
+                        <p className="text-muted-foreground">Manage your uploaded lessons and assignments.</p>
+                    </div>
                 </div>
-                <Button asChild className="bg-emerald-600 hover:bg-emerald-500">
-                    <Link href="/teacher" className="flex items-center gap-2">
+                <Button asChild className="bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20">
+                    <Link href="/teacher#upload" className="flex items-center gap-2">
                         <Plus className="h-4 w-4" />
                         Upload New Video
                     </Link>
@@ -119,11 +127,17 @@ export default function TeacherVideosPage() {
                             </CardHeader>
                             <CardContent className="p-4 pt-0 flex-1 flex flex-col justify-between space-y-4">
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <Layout className="h-3 w-3" />
-                                        <span>
-                                            {packages.find(p => p.id === video.package_id)?.name || 'No Package'}
-                                        </span>
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Layout className="h-3 w-3" />
+                                            <span>
+                                                {packages.find(p => p.id === video.package_id)?.name || 'No Package'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full text-emerald-600 font-medium border border-emerald-500/10">
+                                            <Users className="h-3 w-3" />
+                                            <span>{video.watchers_count || 0} Watchers</span>
+                                        </div>
                                     </div>
                                     <div className="flex flex-wrap gap-1">
                                         {video.grades?.map((g: number) => (
@@ -133,9 +147,10 @@ export default function TeacherVideosPage() {
                                 </div>
 
                                 <div className="flex items-center gap-2 pt-2 border-t border-emerald-500/5">
-                                    <Button asChild size="sm" variant="outline" className="flex-1">
-                                        <Link href={`/teacher/videos/${video.id}`}>Edit Details</Link>
+                                    <Button asChild size="sm" variant="outline" className="flex-1 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-600 transition-colors">
+                                        <Link href={`/teacher/videos/${video.id}/edit`}>Edit Details</Link>
                                     </Button>
+                                    <VideoWatchersDialog videoId={video.id} videoTitle={video.title || "Untitled"} />
                                     <Button
                                         size="sm"
                                         variant="ghost"

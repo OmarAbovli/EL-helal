@@ -31,7 +31,7 @@ export async function getVideoWatchInfo(videoId: string): Promise<VideoWatchInfo
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session_id")?.value
     const user = await getCurrentUser(sessionId)
-    
+
     if (!user || user.role !== "student") {
       return null
     }
@@ -59,7 +59,7 @@ export async function getVideoWatchInfo(videoId: string): Promise<VideoWatchInfo
     }
 
     const data = result[0]
-    const remainingWatches = data.watch_limit_enabled 
+    const remainingWatches = data.watch_limit_enabled
       ? Math.max(0, data.max_allowed - data.times_watched)
       : 999 // عدد كبير إذا كان الحد غير مفعل
 
@@ -88,7 +88,7 @@ export async function getLastWatchPosition(videoId: string): Promise<number> {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session_id")?.value
     const user = await getCurrentUser(sessionId)
-    
+
     if (!user || user.role !== "student") {
       return 0
     }
@@ -119,18 +119,18 @@ export async function getLastWatchPosition(videoId: string): Promise<number> {
 
     const data = result[0]
     const duration = data.duration_seconds || 0
-    
+
     // إذا كان هناك جلسة غير مكتملة، استخدم تقدمها
     if (data.max_progress && data.max_progress < 85) {
       // حول النسبة المئوية إلى ثواني
       return (data.max_progress / 100) * duration
     }
-    
+
     // إذا لم تكن هناك جلسة غير مكتملة، استخدم آخر تقدم محفوظ
     if (data.last_watch_progress && data.last_watch_progress < 85) {
       return (data.last_watch_progress / 100) * duration
     }
-    
+
     return 0
   } catch (error) {
     console.error("Error getting last watch position:", error)
@@ -146,7 +146,7 @@ export async function startWatchSession(videoId: string): Promise<{ success: boo
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session_id")?.value
     const user = await getCurrentUser(sessionId)
-    
+
     if (!user || user.role !== "student") {
       return { success: false }
     }
@@ -173,12 +173,12 @@ export async function startWatchSession(videoId: string): Promise<{ success: boo
       DO UPDATE SET 
         last_watched_at = NOW()
     `
-    
+
     // الحصول على آخر موضع مشاهدة
     const lastPosition = await getLastWatchPosition(videoId)
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       sessionId: result[0].id,
       canWatch: true,
       lastPosition
@@ -193,7 +193,7 @@ export async function startWatchSession(videoId: string): Promise<{ success: boo
  * تتبع تقدم المشاهدة
  */
 export async function trackVideoProgress(
-  videoId: string, 
+  videoId: string,
   progressPercent: number,
   sessionId?: string
 ): Promise<TrackProgressResult> {
@@ -201,7 +201,7 @@ export async function trackVideoProgress(
     const cookieStore = await cookies()
     const cookieSessionId = cookieStore.get("session_id")?.value
     const user = await getCurrentUser(cookieSessionId)
-    
+
     if (!user || user.role !== "student") {
       return { success: false, message: "Unauthorized" }
     }
@@ -209,7 +209,7 @@ export async function trackVideoProgress(
     // التحقق من أن التقدم بين 0 و 100
     const validProgress = Math.min(100, Math.max(0, progressPercent))
     const isCompleted = validProgress >= 85 // يعتبر مكتمل عند 85%
-    
+
     console.log(`[Track Progress] Video: ${videoId}, Progress: ${validProgress}%, Is Completed: ${isCompleted}, Session: ${sessionId}`)
 
     // تحديث جلسة المشاهدة إذا كان لدينا session ID - لكن لا نحدث is_completed هنا
@@ -249,7 +249,7 @@ export async function trackVideoProgress(
         FROM video_watch_sessions
         WHERE id = ${sessionId} AND student_id = ${user.id} AND video_id = ${videoId}
       ` as any[]
-      
+
       if (sessionData.length > 0) {
         sessionAlreadyCompleted = sessionData[0].is_completed
       }
@@ -258,12 +258,12 @@ export async function trackVideoProgress(
     // إذا وصل إلى 85% ولم يكن قد أكمل في هذه الجلسة
     let newCompletion = false
     console.log(`[Track Progress] Check completion: isCompleted=${isCompleted}, sessionAlreadyCompleted=${sessionAlreadyCompleted}, sessionId=${sessionId}`)
-    
+
     if (isCompleted && !sessionAlreadyCompleted) {
       console.log('[Track Progress] ✅ Marking session as completed. Previous count:', completedCount)
       completedCount += 1
       newCompletion = true
-      
+
       // تحديث الجلسة كمكتملة
       if (sessionId) {
         console.log('[Track Progress] Updating session as completed in DB')
@@ -304,7 +304,7 @@ export async function trackVideoProgress(
 
     const maxAllowed = videoInfo[0]?.max_allowed || 3
     const watchLimitEnabled = videoInfo[0]?.watch_limit_enabled ?? true
-    const remainingWatches = watchLimitEnabled 
+    const remainingWatches = watchLimitEnabled
       ? Math.max(0, maxAllowed - completedCount)
       : 999
 
@@ -315,7 +315,7 @@ export async function trackVideoProgress(
       remainingWatches,
       totalWatches: completedCount
     }
-    
+
     console.log('[Track Progress] Final result:', result)
     return result
   } catch (error) {
@@ -332,7 +332,7 @@ export async function getStudentWatchStats(studentId?: string) {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session_id")?.value
     const user = await getCurrentUser(sessionId)
-    
+
     if (!user) return null
 
     // إذا لم يتم تحديد studentId، استخدم المستخدم الحالي
@@ -368,7 +368,7 @@ export async function getVideosWithWatchInfo(packageId?: string) {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session_id")?.value
     const user = await getCurrentUser(sessionId)
-    
+
     if (!user || user.role !== "student") {
       return []
     }
@@ -430,5 +430,55 @@ export async function getVideosWithWatchInfo(packageId?: string) {
   } catch (error) {
     console.error("Error getting videos with watch info:", error)
     return []
+  }
+}
+
+/**
+ * التحقق من المعلم
+ */
+async function requireTeacherId() {
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get("session_id")?.value
+  const me = await getCurrentUser(sessionId)
+  if (!me || me.role !== "teacher") {
+    throw new Error("Not authorized: teacher access required")
+  }
+  return me.id
+}
+
+/**
+ * الحصول على قائمة الطلاب الذين شاهدوا فيديو معين
+ */
+export async function getVideoWatchers(videoId: string) {
+  try {
+    const teacherId = await requireTeacherId()
+
+    // التأكد من أن المعلم يملك هذا الفيديو
+    const [video] = await sql`
+      SELECT id FROM videos WHERE id = ${videoId} AND teacher_id = ${teacherId}
+    ` as any[]
+
+    if (!video) {
+      return { ok: false, error: "Unauthorized or video not found" }
+    }
+
+    const rows = await sql`
+      SELECT 
+        vwt.student_id,
+        u.name as student_name,
+        u.username as student_username,
+        u.grade as student_grade,
+        vwt.completed_count,
+        vwt.last_watch_progress,
+        vwt.last_watched_at
+      FROM video_watch_tracking vwt
+      JOIN users u ON u.id = vwt.student_id
+      WHERE vwt.video_id = ${videoId}
+      ORDER BY vwt.last_watched_at DESC;
+    `
+    return { ok: true as const, watchers: rows as any[] }
+  } catch (e: any) {
+    console.error("getVideoWatchers error", e)
+    return { ok: false as const, error: e?.message || "Internal Error" }
   }
 }

@@ -4,12 +4,12 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, Clock, Target, TrendingUp } from "lucide-react"
-import { 
-  getPracticeExams, 
+import { BookOpen, Clock, Target, TrendingUp, ArrowRight } from "lucide-react"
+import {
+  getPracticeExams,
   getMyExamHistory,
   getUpcomingExamsForStudent,
-  getStudentVideoQuizzes 
+  getStudentVideoQuizzes
 } from "@/server/student-exam-actions"
 import { Calendar } from "lucide-react"
 import { ExamCountdown } from "@/components/exam-countdown"
@@ -60,14 +60,24 @@ export default function TrainingPage() {
     <div className="min-h-screen bg-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <BookOpen className="h-8 w-8 text-emerald-400" />
-            صفحة التدريب
-          </h1>
-          <p className="text-slate-400">
-            راجع الاختبارات السابقة وحسّن أداءك
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+              <BookOpen className="h-8 w-8 text-emerald-400" />
+              صفحة التدريب
+            </h1>
+            <p className="text-slate-400">
+              راجع الاختبارات السابقة وحسّن أداءك
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/student')}
+            className="w-fit text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white gap-2 flex-row-reverse"
+          >
+            <span>العودة للرئيسية</span>
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Stats */}
@@ -92,7 +102,7 @@ export default function TrainingPage() {
                 <TrendingUp className="h-10 w-10 text-teal-400" />
                 <div>
                   <div className="text-2xl font-bold text-white">
-                    {history.length > 0 
+                    {history.length > 0
                       ? (history.reduce((sum, h) => sum + (Number(h.percentage) || 0), 0) / history.length).toFixed(1)
                       : 0
                     }%
@@ -147,7 +157,7 @@ export default function TrainingPage() {
                       <span className="text-slate-400">النجاح:</span>
                       <span className="text-white">{exam.passing_score}%</span>
                     </div>
-                    
+
                     <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded space-y-2">
                       <ExamCountdown scheduledAt={exam.scheduled_at} />
                       <div className="text-center">
@@ -176,7 +186,7 @@ export default function TrainingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {practiceExams.map((exam) => {
               const myAttempts = history.filter(h => h.exam_id === exam.id)
-              const bestScore = myAttempts.length > 0 
+              const bestScore = myAttempts.length > 0
                 ? Math.max(...myAttempts.map(a => Number(a.percentage) || 0))
                 : null
 
@@ -203,7 +213,7 @@ export default function TrainingPage() {
                       </div>
                     )}
 
-                    <Button 
+                    <Button
                       onClick={() => router.push(`/student/exam/${exam.id}`)}
                       className="w-full bg-gradient-to-r from-emerald-500 to-teal-500"
                     >
@@ -238,7 +248,7 @@ export default function TrainingPage() {
                       <span className="text-slate-400">المدرس:</span>
                       <span className="text-white">{quiz.teacher_name}</span>
                     </div>
-                    
+
                     {quiz.time_limit_minutes && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-slate-400">المدة:</span>
@@ -259,7 +269,7 @@ export default function TrainingPage() {
                       {quiz.attempt_count > 0 ? `${quiz.attempt_count} محاولات` : 'لم تحل بعد'}
                     </div>
 
-                    <Button 
+                    <Button
                       onClick={() => router.push(`/student/video/${quiz.video_id}#quiz-${quiz.id}`)}
                       className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
                     >

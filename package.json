@@ -64,6 +64,7 @@
     "expo-asset": "latest",
     "expo-file-system": "latest",
     "expo-gl": "latest",
+    "framer-motion": "^12.29.3",
     "geist": "latest",
     "hls.js": "latest",
     "html5-qrcode": "^2.3.8",

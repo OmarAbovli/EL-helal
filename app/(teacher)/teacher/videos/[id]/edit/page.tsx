@@ -9,8 +9,8 @@ type PageProps = {
     params: { id: string };
 };
 
-export default async function EditVideoPage({ params }: PageProps) {
-    const videoId = params.id;
+export default async function EditVideoPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id: videoId } = await params;
     const videoData = await getVideoWithResources(videoId);
     const packages = await getTeacherPackages();
 
@@ -19,15 +19,12 @@ export default async function EditVideoPage({ params }: PageProps) {
     }
 
     return (
-        <div className="flex min-h-screen">
-            <TeacherAppSidebar />
-            <main className="flex-1 p-6">
-                <h1 className="text-2xl font-bold mb-6">Edit Video</h1>
-                <div className="space-y-8">
-                    <EditVideoForm video={videoData} packages={packages} />
-                    <ResourceManager videoId={videoData.id} resources={videoData.resources} />
-                </div>
-            </main>
-        </div>
+        <main className="p-6">
+            <h1 className="text-2xl font-bold mb-6">Edit Video</h1>
+            <div className="space-y-8">
+                <EditVideoForm video={videoData as any} packages={packages} />
+                <ResourceManager videoId={(videoData as any).id} resources={(videoData as any).resources} />
+            </div>
+        </main>
     );
 }

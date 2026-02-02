@@ -2,6 +2,79 @@
 
 import { sql } from "@/server/db"
 import { randomUUID } from "crypto"
+import { cookies } from "next/headers"
+import { getCurrentUser } from "@/lib/auth"
+import { revalidatePath } from "next/cache"
+
+async function requireTeacherId() {
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get("session_id")?.value
+  const me = await getCurrentUser(sessionId)
+  if (!me || me.role !== "teacher") {
+    throw new Error("Not authorized: teacher access required")
+  }
+  return me.id
+}
+
+export async function getTeacherQrTokens() {
+  try {
+    const teacherId = await requireTeacherId()
+
+    const rows = await sql`
+      SELECT 
+        q.id, 
+        q.token, 
+        q.user_id, 
+        q.expires_at, 
+        q.used, 
+        q.is_permanent, 
+        q.usage_count, 
+        q.max_uses,
+        u.name as student_name,
+        u.username as student_username,
+        u.grade as student_grade
+      FROM qr_tokens q
+      JOIN users u ON u.id = q.user_id
+      JOIN teacher_subscriptions ts ON ts.student_id = u.id
+      WHERE ts.teacher_id = ${teacherId} AND ts.status = 'active'
+      ORDER BY q.expires_at DESC;
+    `
+    return { ok: true as const, tokens: rows as any[] }
+  } catch (e: any) {
+    console.error("getTeacherQrTokens error", e)
+    return { ok: false as const, error: e?.message || "Internal Error" }
+  }
+}
+
+export async function updateQrMaxUses(qrId: string, newMax: number) {
+  try {
+    const teacherId = await requireTeacherId()
+
+    // Safety check: ensure the teacher owns this student
+    const [owns] = await sql`
+      SELECT 1 
+      FROM qr_tokens q
+      JOIN teacher_subscriptions ts ON ts.student_id = q.user_id
+      WHERE q.id = ${qrId} AND ts.teacher_id = ${teacherId} AND ts.status = 'active'
+      LIMIT 1;
+    `
+    if (!owns) throw new Error("Unauthorized or QR code not found")
+
+    await sql`
+      UPDATE qr_tokens
+      SET max_uses = ${newMax},
+          used = (usage_count >= ${newMax})
+      WHERE id = ${qrId};
+    `
+
+    revalidatePath("/teacher/qr-login")
+    return { ok: true as const }
+  } catch (e: any) {
+    console.error("updateQrMaxUses error", e)
+    return { ok: false as const, error: e?.message || "Internal Error" }
+  }
+}
+
 
 export async function createQrToken(args: { token: string; userId: string; expiresInMinutes: number; isPermanent?: boolean; maxUses?: number }) {
   try {

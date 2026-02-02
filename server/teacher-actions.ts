@@ -660,10 +660,12 @@ export async function getMyVideos() {
   try {
     const teacherId = await requireTeacherId()
     const rows = (await sql`
-      SELECT id, title, description, url, category, is_free, package_id, grades, created_at
-      FROM videos
-      WHERE teacher_id = ${teacherId}
-      ORDER BY created_at DESC;
+      SELECT 
+        v.id, v.title, v.description, v.url, v.category, v.is_free, v.package_id, v.grades, v.created_at, v.thumbnail_url,
+        (SELECT COUNT(*) FROM video_watch_tracking vwt JOIN users u ON u.id = vwt.student_id WHERE vwt.video_id = v.id) as watchers_count
+      FROM videos v
+      WHERE v.teacher_id = ${teacherId}
+      ORDER BY v.created_at DESC;
     `) as any[]
     return rows as {
       id: string
@@ -675,6 +677,8 @@ export async function getMyVideos() {
       package_id: string | null
       grades: number[] | null
       created_at: string
+      thumbnail_url: string | null
+      watchers_count: number
     }[]
   } catch (e) {
     console.error("getMyVideos error", e)

@@ -22,15 +22,15 @@ function loadEnvLocal() {
           const value = valueParts.join('=').trim()
           if (key && value) {
             process.env[key.trim()] = value
-            console.log(`✅ Set ${key.trim()} = ${value.substring(0, 10)}...`)
+            console.log(` Set ${key.trim()} = ${value.substring(0, 10)}...`)
           }
         }
       }
     } else {
-      console.log('❌ .env.local file does not exist')
+      console.log(' .env.local file does not exist')
     }
   } catch (error) {
-    console.error('❌ Failed to load .env.local:', error)
+    console.error(' Failed to load .env.local:', error)
   }
 }
 
@@ -98,7 +98,7 @@ export async function testGroqKey() {
     }
     
     const data = await response.json()
-    console.log('✅ API call successful!')
+    console.log(' API call successful!')
     
     return {
       success: true,
