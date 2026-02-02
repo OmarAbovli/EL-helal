@@ -3,12 +3,13 @@
 import { cookies } from "next/headers"
 import { sql } from "./db"
 import { getCurrentUser } from "@/lib/auth"
+import { awardXP } from "./xp-actions"
 
 // Helper: Require student authentication
 async function requireStudentId() {
   const sessionId = (await cookies()).get("session_id")?.value
   if (!sessionId) throw new Error("Not authenticated")
-  
+
   const user = await getCurrentUser(sessionId)
   if (!user || user.role !== "student") {
     throw new Error("Student access required")
@@ -206,7 +207,7 @@ export async function getExamQuestions(attemptId: string) {
     // Get questions in shuffled order
     console.log('Raw questions_shuffled_order:', attempt.questions_shuffled_order)
     console.log('Type:', typeof attempt.questions_shuffled_order)
-    
+
     let questionOrder: string[]
     if (typeof attempt.questions_shuffled_order === 'string') {
       questionOrder = JSON.parse(attempt.questions_shuffled_order)
@@ -226,7 +227,7 @@ export async function getExamQuestions(attemptId: string) {
       WHERE q.exam_id = ${attempt.exam_id}
     `
     console.log('Questions fetched:', allQuestions.length)
-    
+
     if (allQuestions.length === 0) {
       return { success: false, error: "هذا الاختبار لا يحتوي على أسئلة. يرجى مراجعة المدرس." }
     }
@@ -252,7 +253,7 @@ export async function getExamQuestions(attemptId: string) {
     }))
 
     // Sort questions according to shuffled order
-    const sortedQuestions = questionOrder.map((qId: string) => 
+    const sortedQuestions = questionOrder.map((qId: string) =>
       questions.find((q: any) => q.id === qId)
     )
 
@@ -367,8 +368,22 @@ export async function submitExam(attemptId: string) {
       WHERE id = ${attemptId}
     `
 
-    return { 
-      success: true, 
+    // 🏆 Award XP for Exam Submission
+    const baseXP = 50
+    const scoreBonus = Math.floor(score * 2) // 2 XP per point
+    const perfectBonus = percentage >= 100 ? 100 : 0
+    const totalAward = baseXP + scoreBonus + perfectBonus
+
+    await awardXP({
+      userId: studentId,
+      amount: totalAward,
+      source: 'exam',
+      sourceId: attempt.exam_id,
+      description: `Exam Submitted: ${attempt.exam_id} (Score: ${Math.round(percentage)}%)`
+    })
+
+    return {
+      success: true,
       score,
       totalPoints: attempt.total_points,
       percentage,
@@ -384,7 +399,7 @@ export async function submitExam(attemptId: string) {
  * Record a violation
  */
 export async function recordViolation(
-  attemptId: string, 
+  attemptId: string,
   violationType: 'tab_switch' | 'window_blur' | 'context_menu' | 'copy_paste' | 'fullscreen_exit' | 'developer_tools' | 'suspicious_activity',
   details?: any
 ) {

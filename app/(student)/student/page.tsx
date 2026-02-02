@@ -13,6 +13,8 @@ import {
   getAccessibleVideoCategories,
   getUpcomingLiveExams,
 } from "@/server/student-queries"
+import { getStudentXPStatus } from "@/server/xp-actions"
+import { XPProgressCard } from "@/components/xp-progress-card"
 import { getAvailableExams } from "@/server/student-exam-actions"
 import { VideoPlayer } from "@/components/video-player"
 import { StudentHeroFX } from "@/components/student-hero-fx"
@@ -59,13 +61,14 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
     )
   }
 
-  const [teacherVideoGroups, sessions, activeNow, categories, availableExamsResult, upcomingExams] = await Promise.all([
+  const [teacherVideoGroups, sessions, activeNow, categories, availableExamsResult, upcomingExams, xpStatus] = await Promise.all([
     getStudentDashboardData(user.id, { category }),
     getUpcomingLiveSessions(user.id),
     getActiveLiveStreams(user.id),
     getAccessibleVideoCategories(user.id),
     getAvailableExams(),
     getUpcomingLiveExams(user.id),
+    getStudentXPStatus(user.id),
   ])
 
   // Filter active exams only
@@ -83,6 +86,19 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
         <section className="mb-6">
           <StudentLiveCallBanner />
         </section>
+
+        {xpStatus && (
+          <section className="mb-8">
+            <XPProgressCard
+              xp={xpStatus.xp}
+              level={xpStatus.level}
+              percentage={xpStatus.percentage}
+              nextLevelXP={xpStatus.nextLevelXP}
+              streakCount={xpStatus.streak_count}
+              rank={xpStatus.rank}
+            />
+          </section>
+        )}
 
         {/* Live Now - Streams & Active Exams */}
         {(activeNow.length > 0 || activeExams.length > 0) && (

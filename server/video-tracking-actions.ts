@@ -3,6 +3,7 @@
 import { sql } from "@/server/db"
 import { getCurrentUser } from "@/lib/auth"
 import { cookies } from "next/headers"
+import { awardXP } from "./xp-actions"
 
 interface VideoWatchInfo {
   videoId: string
@@ -273,8 +274,33 @@ export async function trackVideoProgress(
           WHERE id = ${sessionId}
         `
       }
+
+      // 🏆 Award XP for completion
+      await awardXP({
+        userId: user.id,
+        amount: 100,
+        source: 'video',
+        sourceId: videoId,
+        description: `Video Completion: ${videoId}`
+      })
     } else {
       console.log(`[Track Progress] ❌ Not marking as complete. Reasons: isCompleted=${isCompleted}, sessionAlreadyCompleted=${sessionAlreadyCompleted}`)
+    }
+
+    // 🏆 Award XP for progress duration (incremental)
+    if (validProgress > previousProgress) {
+      const progressGained = validProgress - previousProgress
+      // Award 2 XP per 1% of video progress gained
+      const durationXP = Math.floor(progressGained * 2)
+      if (durationXP > 0) {
+        await awardXP({
+          userId: user.id,
+          amount: durationXP,
+          source: 'video',
+          sourceId: videoId,
+          description: `Video Watch Progress (+${Math.round(progressGained)}%)`
+        })
+      }
     }
 
     // تحديث أو إنشاء سجل التتبع

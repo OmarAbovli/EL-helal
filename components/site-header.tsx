@@ -68,6 +68,9 @@ const SiteHeader = async () => {
               >
                 🤖 مارس اللغة
               </Link>
+              <Link href="/student/leaderboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Leaderboard
+              </Link>
               <Link href="/student/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Profile
               </Link>

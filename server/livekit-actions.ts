@@ -3,6 +3,7 @@
 import { AccessToken } from "livekit-server-sdk"
 import { z } from "zod"
 import { sql } from "@/server/db"
+import { awardXP } from "./xp-actions"
 
 export async function createLiveKitToken(roomName: string, identity: string, role: "host" | "guest", name?: string) {
     const apiKey = process.env.LIVEKIT_API_KEY
@@ -146,6 +147,24 @@ export async function saveCallStats(roomName: string, userId: string, stats: { s
                 user_id = ${userId} 
                 AND call_id IN (SELECT id FROM voice_calls WHERE room_name = ${roomName} LIMIT 1)
         `
+
+        // 🏆 Award XP for Live Participation
+        // 5 XP per minute of speaking, 1 XP per minute of active presence (mic open)
+        const speakingXP = Math.floor((stats.speakingSeconds / 60) * 5)
+        const presenceXP = Math.floor((stats.micOpenSeconds / 60) * 1)
+        const bonusXP = (stats.handRaiseCount || 0) * 2 // 2 XP per hand raise
+
+        const totalLiveXP = speakingXP + presenceXP + bonusXP
+
+        if (totalLiveXP > 0) {
+            await awardXP({
+                userId,
+                amount: totalLiveXP,
+                source: 'live',
+                description: `Live Participation: ${roomName} (+${totalLiveXP} XP)`
+            })
+        }
+
         return { success: true }
     } catch (e) {
         console.error("Failed to save stats", e)
