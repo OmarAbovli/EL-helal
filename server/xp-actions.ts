@@ -48,7 +48,7 @@ export async function awardXP(params: {
 /**
  * Get the current student's XP and Level status
  */
-export async function getStudentXPStatus(studentId?: string) {
+export async function getStudentXPStatus(studentId?: string, grade?: number) {
     try {
         const cookieStore = await cookies()
         const sessionId = cookieStore.get("session_id")?.value
@@ -72,7 +72,6 @@ export async function getStudentXPStatus(studentId?: string) {
         if (!status) return null
 
         // Calculate XP needed for next level
-        // Formula: next_level_xp = (current_level)^2 * 100
         const currentLevel = status.level
         const nextLevelXP = Math.pow(currentLevel, 2) * 100
         const currentLevelXP = Math.pow(currentLevel - 1, 2) * 100
@@ -81,7 +80,7 @@ export async function getStudentXPStatus(studentId?: string) {
         const totalXPInLevel = nextLevelXP - currentLevelXP
         const percentage = Math.min(100, Math.max(0, (progressInLevel / totalXPInLevel) * 100))
 
-        const rank = await getStudentRank(targetId)
+        const rank = await getStudentRank(targetId, grade)
 
         return {
             ...status,
@@ -133,15 +132,28 @@ export async function getLeaderboard(params?: { grade?: number, limit?: number }
 /**
  * Get student rank
  */
-export async function getStudentRank(studentId: string) {
+export async function getStudentRank(studentId: string, grade?: number) {
     try {
-        const [result] = await sql`
-            SELECT COUNT(*) + 1 as rank
-            FROM users
-            WHERE role = 'student' AND xp > (SELECT xp FROM users WHERE id = ${studentId})
-        ` as any[]
+        let result: any
+        if (grade) {
+            [result] = await sql`
+                SELECT COUNT(*) + 1 as rank
+                FROM users
+                WHERE role = 'student' 
+                AND grade = ${grade}
+                AND xp > (SELECT xp FROM users WHERE id = ${studentId})
+            ` as any[]
+        } else {
+            [result] = await sql`
+                SELECT COUNT(*) + 1 as rank
+                FROM users
+                WHERE role = 'student' 
+                AND xp > (SELECT xp FROM users WHERE id = ${studentId})
+            ` as any[]
+        }
         return parseInt(result.rank)
     } catch (e) {
+        console.error("getStudentRank error", e)
         return null
     }
 }

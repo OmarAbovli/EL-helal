@@ -9,8 +9,8 @@ import { Trophy, Medal, Star, TrendingUp, Users } from "lucide-react"
 
 export default async function LeaderboardPage({ searchParams }: { searchParams: { grade?: string } }) {
     const selectedGrade = searchParams.grade ? parseInt(searchParams.grade) : undefined
-    const { leaderboard = [] } = await getLeaderboard({ grade: selectedGrade })
-    const currentUserStatus = await getStudentXPStatus()
+    const { leaderboard = [] } = await getLeaderboard({ grade: selectedGrade, limit: 100 })
+    const currentUserStatus = await getStudentXPStatus(undefined, selectedGrade)
 
     const topThree = leaderboard.slice(0, 3)
     const others = leaderboard.slice(3)
@@ -122,37 +122,39 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
                 </div>
 
                 {/* Others Table */}
-                <Card className="border-none shadow-xl bg-background/50 backdrop-blur">
+                <Card className="border-none shadow-xl bg-background/50 backdrop-blur overflow-hidden">
                     <CardHeader className="border-b bg-muted/20">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4 text-primary" />
-                                التصنيف العالمي
+                                الترتيب العام (باقي المتسابقين)
                             </CardTitle>
                             <Badge variant="outline" className="text-xs">{leaderboard.length} مُتعلّم</Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="divide-y">
-                            {others.map((p, idx) => (
-                                <div key={p.id} className="flex items-center justify-between p-4 transition-colors hover:bg-muted/30">
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-sm font-black text-muted-foreground w-6">{idx + 4}</span>
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarImage src={p.avatar_url} />
-                                            <AvatarFallback>{p.name?.slice(0, 2)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-semibold text-sm">{p.name}</p>
-                                            <p className="text-[10px] text-muted-foreground">الصف {p.grade} • Level {p.level}</p>
+                        <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+                            <div className="divide-y">
+                                {others.map((p, idx) => (
+                                    <div key={p.id} className="flex items-center justify-between p-4 transition-colors hover:bg-muted/30">
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-sm font-black text-muted-foreground w-6">{idx + 4}</span>
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarImage src={p.avatar_url} />
+                                                <AvatarFallback>{p.name?.slice(0, 2)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-semibold text-sm">{p.name}</p>
+                                                <p className="text-[10px] text-muted-foreground">الصف {p.grade} • Level {p.level}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-black text-primary">{p.xp}</p>
+                                            <p className="text-[10px] uppercase text-muted-foreground tracking-widest">XP</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-sm font-black text-primary">{p.xp}</p>
-                                        <p className="text-[10px] uppercase text-muted-foreground tracking-widest">Points</p>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -163,8 +165,8 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
                         <Card className="bg-primary text-primary-foreground shadow-2xl border-none">
                             <CardContent className="p-4 flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center font-black">
-                                        #{leaderboard.findIndex(l => l.id === currentUserStatus.id) + 1 || '?'}
+                                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center font-black text-sm">
+                                        #{currentUserStatus.rank || '?'}
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold">مركزك الحالي</p>
