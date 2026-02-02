@@ -74,11 +74,11 @@ export async function POST(req: Request) {
 
     // 3. Fetch package details from DB
     const [pkg] = await sql`
-        SELECT id, teacher_id, name, price FROM video_packages WHERE id = ${packageId}
+        SELECT id, teacher_id, name, price FROM packages WHERE id = ${packageId}
     ` as any[]
 
     if (!pkg) {
-        return NextResponse.json({ ok: false, error: 'package_not_found' }, { status: 404 })
+      return NextResponse.json({ ok: false, error: 'package_not_found' }, { status: 404 })
     }
 
     // 4. Get Paymob config

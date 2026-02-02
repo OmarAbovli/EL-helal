@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import SiteHeader from "@/components/site-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { sql } from "@/server/db"
 import { getCurrentUser } from "@/lib/auth"
 
@@ -10,7 +11,7 @@ import { getCurrentUser } from "@/lib/auth"
 async function getPackageWithVideos(packageId: string) {
   const [pkg] = (await sql`
     SELECT id, teacher_id, name, description, price, thumbnail_url
-    FROM video_packages
+    FROM packages
     WHERE id = ${packageId}
     LIMIT 1;
   `) as any[]
@@ -99,32 +100,54 @@ export default async function PackagePage({ params }: { params: { id: string } }
             <p className="text-sm text-muted-foreground">No videos have been added to this package yet.</p>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((v) => (
-              <Card key={v.id} className="h-full overflow-hidden">
-                <CardContent className="flex gap-3 p-3">
+              <Card key={v.id} className="h-full overflow-hidden flex flex-col">
+                <CardContent className="p-0 flex-1 flex flex-col">
                   {v.thumbnail_url && (
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
+                    <div className="relative aspect-video w-full overflow-hidden bg-muted group">
                       <img
                         src={v.thumbnail_url}
                         alt={v.title ?? "Video thumbnail"}
-                        className="h-full w-full object-cover"
+                        className={`h-full w-full object-cover transition-transform duration-300 ${v.is_free ? "group-hover:scale-105" : "opacity-50 grayscale"}`}
                         loading="lazy"
                       />
+                      {!v.is_free && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <span className="text-white text-xs font-bold uppercase tracking-widest px-2 py-1 bg-black/60 rounded">
+                            🔒 Paid Content
+                          </span>
+                        </div>
+                      )}
+                      {v.is_free && (
+                        <div className="absolute top-2 left-2">
+                          <Badge className="bg-emerald-500 hover:bg-emerald-600 border-none">Free</Badge>
+                        </div>
+                      )}
                     </div>
                   )}
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                      {v.category && <Badge variant="outline">{v.category}</Badge>}
-                      {typeof v.is_free === "boolean" && (
-                        <Badge variant={v.is_free ? "default" : "secondary"}>{v.is_free ? "Free" : "Paid"}</Badge>
-                      )}
-                      {typeof v.month === "number" && <Badge variant="secondary">Month {v.month}</Badge>}
+                  <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground mb-1">
+                        {v.category && <Badge variant="outline" className="text-[9px] h-4">{v.category}</Badge>}
+                        {typeof v.month === "number" && <Badge variant="secondary" className="text-[9px] h-4">Month {v.month}</Badge>}
+                      </div>
+                      <p className="text-sm font-bold leading-tight line-clamp-2">{v.title || "Lesson"}</p>
                     </div>
-                    <p className="text-sm font-semibold leading-snug line-clamp-2">{v.title || "Lesson"}</p>
-                    {v.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">{v.description}</p>
-                    )}
+
+                    <div className="pt-2">
+                      {v.is_free ? (
+                        <Link href={`/watch/${v.id}`} className="w-full">
+                          <Button variant="default" size="sm" className="w-full h-8 text-xs bg-emerald-500 hover:bg-emerald-600">
+                            شاهد الفيديو مجاناً
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button variant="secondary" size="sm" className="w-full h-8 text-xs cursor-default opacity-80" disabled>
+                          محتوى مدفوع
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

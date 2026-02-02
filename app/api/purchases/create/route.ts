@@ -79,7 +79,7 @@ export async function POST(req: Request) {
 
       const [pkg] = (await sql`
         SELECT id, teacher_id, price
-        FROM video_packages
+        FROM packages
         WHERE id = ${packageId}
         LIMIT 1;
       `) as { id: string; teacher_id: string; price: number }[]

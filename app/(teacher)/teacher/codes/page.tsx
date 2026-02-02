@@ -1,12 +1,12 @@
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser } from "../../../../lib/auth"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import SiteHeader from "@/components/site-header"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import SiteHeader from "../../../../components/site-header"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../../components/ui/card"
+import { Button } from "../../../../components/ui/button"
 import { ArrowRight, Plus, Ticket } from "lucide-react"
 import Link from "next/link"
-import { getCodeStatistics, getTeacherCodes } from "@/server/package-code-actions"
+import { getCodeStatistics, getTeacherCodes } from "../../../../server/package-code-actions"
 import {
     Table,
     TableBody,
@@ -14,8 +14,8 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+} from "../../../../components/ui/table"
+import { Badge } from "../../../../components/ui/badge"
 
 export const metadata = {
     title: "إدارة أكواد الباقات | Competooo",

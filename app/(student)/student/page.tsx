@@ -178,25 +178,54 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                     )}
                   </div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {pkg.videos.slice(0, 3).map((v: any) => (
-                      <div
-                        key={v.id}
-                        className="relative rounded-lg border bg-card/50 text-card-foreground shadow-sm aspect-video flex items-center justify-center opacity-50 overflow-hidden min-w-0"
-                      >
-                        <p className="font-semibold text-lg text-center px-2 line-clamp-2">{v.title}</p>
+                  <div className="grid gap-6">
+                    {/* Free Videos in this locked package */}
+                    {pkg.videos.some((v: any) => v.is_free) && (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {pkg.videos.filter((v: any) => v.is_free).map((v: any) => (
+                          <StudentVideoCard
+                            key={v.id}
+                            id={v.id}
+                            title={`${v.title} (مجاني)`}
+                            source={v.url}
+                            thumbnailUrl={v.thumbnail_url || "/course-thumbnail.png"}
+                            watermarkText={user.name ? `${user.name} • ${user.id}` : user.id}
+                            antiDownload
+                            hideRedeem={true}
+                          />
+                        ))}
                       </div>
-                    ))}
-                    <div className="rounded-lg border-2 border-dashed bg-card/30 text-card-foreground flex flex-col items-center justify-center p-4 aspect-video overflow-hidden min-w-0">
-                      <h4 className="text-lg font-semibold text-center break-words max-w-full px-2">Unlock {pkg.name}</h4>
-                      <p className="text-sm text-muted-foreground mt-1 mb-4 text-center px-2">
-                        Get access to all videos in this package.
-                      </p>
-                      <div className="flex flex-wrap gap-2 items-center justify-center w-full">
-                        <PurchasePackageButton pkg={pkg} />
-                        <RedeemCodeDialog />
+                    )}
+
+                    <div className="rounded-lg border-2 border-dashed bg-card/30 text-card-foreground flex flex-col items-center justify-center p-8 aspect-[21/9] min-h-[200px] overflow-hidden min-w-0">
+                      <div className="max-w-md text-center">
+                        <h4 className="text-xl font-bold mb-2">Unlock All: {pkg.name}</h4>
+                        <p className="text-sm text-muted-foreground mb-6">
+                          احصل على وصول كامل لجميع فيديوهات هذا المجلد ({pkg.videos.length - pkg.videos.filter((v: any) => v.is_free).length} فيديو مدفوع).
+                        </p>
+                        <div className="flex flex-wrap gap-3 items-center justify-center">
+                          <PurchasePackageButton pkg={pkg} />
+                          <RedeemCodeDialog />
+                        </div>
                       </div>
                     </div>
+
+                    {/* Locked Teasers */}
+                    {!pkg.videos.some((v: any) => v.is_free) && pkg.videos.length > 0 && (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-60">
+                        {pkg.videos.slice(0, 3).map((v: any) => (
+                          <div
+                            key={v.id}
+                            className="relative rounded-lg border bg-card/50 text-card-foreground shadow-sm aspect-video flex flex-col items-center justify-center overflow-hidden min-w-0 p-4"
+                          >
+                            <span className="text-sm font-semibold text-center line-clamp-2">{v.title}</span>
+                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground mt-2 inline-flex items-center gap-1">
+                              🔒 محتوى مدفوع
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </section>

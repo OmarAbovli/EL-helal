@@ -17,7 +17,7 @@ function makeWhatsAppUrl(pkgName: string) {
 async function getPackageWithVideos(packageId: string) {
   const [pkg] = (await sql`
     SELECT id, teacher_id, name, description, price, thumbnail_url, grades
-    FROM video_packages
+    FROM packages
     WHERE id = ${packageId}
     LIMIT 1;
   `) as any[]
@@ -64,10 +64,10 @@ export default async function PackagePage({ params }: { params: { id: string } }
   const priceLabel =
     typeof pkg.price === "number" && pkg.price > 0
       ? (pkg.price / 100).toLocaleString("en-EG", {
-          style: "currency",
-          currency: "EGP",
-          minimumFractionDigits: 0,
-        })
+        style: "currency",
+        currency: "EGP",
+        minimumFractionDigits: 0,
+      })
       : "Free"
 
   return (
@@ -102,12 +102,12 @@ export default async function PackagePage({ params }: { params: { id: string } }
               </div>
             </div>
 
-            {/* WhatsApp Purchase Button */}
+            {/* WhatsApp Purchase Button / Entry Button */}
             <div className="shrink-0">
               <Button asChild className="w-full sm:w-auto">
-                <a href={makeWhatsAppUrl(pkg.name)} target="_blank" rel="noreferrer">
+                <a href={pkg.price > 0 ? makeWhatsAppUrl(pkg.name) : "/student"} target="_blank" rel="noreferrer">
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  Purchase on WhatsApp
+                  {pkg.price > 0 ? "Purchase on WhatsApp" : "Access for Free"}
                 </a>
               </Button>
             </div>
@@ -164,15 +164,17 @@ export default async function PackagePage({ params }: { params: { id: string } }
         <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/30">
           <CardContent className="flex flex-col items-center gap-3 p-6 text-center sm:flex-row sm:justify-between sm:text-left">
             <div>
-              <p className="font-semibold">Ready to start learning?</p>
+              <p className="font-semibold">{pkg.price > 0 ? "Ready to start learning?" : "Start learning now!"}</p>
               <p className="text-sm text-muted-foreground">
-                Contact us on WhatsApp to purchase this package and get instant access.
+                {pkg.price > 0
+                  ? "Contact us on WhatsApp to purchase this package and get instant access."
+                  : "Login to your dashboard to access this package for free."}
               </p>
             </div>
             <Button asChild size="lg" className="shrink-0">
-              <a href={makeWhatsAppUrl(pkg.name)} target="_blank" rel="noreferrer">
+              <a href={pkg.price > 0 ? makeWhatsAppUrl(pkg.name) : "/student"} target="_blank" rel="noreferrer">
                 <MessageCircle className="mr-2 h-4 w-4" />
-                Buy Now on WhatsApp
+                {pkg.price > 0 ? "Buy Now on WhatsApp" : "Login to Start"}
               </a>
             </Button>
           </CardContent>
