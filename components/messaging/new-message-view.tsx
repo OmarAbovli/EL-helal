@@ -16,9 +16,10 @@ type Teacher = {
 
 interface NewMessageViewProps {
   onMessageSent: (conversationId: string) => void
+  initialTeacherId?: string | null
 }
 
-export function NewMessageView({ onMessageSent }: NewMessageViewProps) {
+export function NewMessageView({ onMessageSent, initialTeacherId }: NewMessageViewProps) {
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -28,12 +29,15 @@ export function NewMessageView({ onMessageSent }: NewMessageViewProps) {
   useEffect(() => {
     getSubscribedTeachers().then((data) => {
       setTeachers(data)
-      if (data.length === 1) {
+      if (initialTeacherId) {
+        const preselected = data.find(t => t.id === initialTeacherId)
+        if (preselected) setSelectedTeacher(preselected)
+      } else if (data.length === 1) {
         setSelectedTeacher(data[0])
       }
       setIsLoading(false)
     })
-  }, [])
+  }, [initialTeacherId])
 
   const handleSendMessage = async (formData: FormData) => {
     const body = formData.get("body") as string

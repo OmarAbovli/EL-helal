@@ -18,7 +18,7 @@ import { redeemPackageCode } from "@/server/package-code-actions"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-provider"
 
-export default function RedeemCodeDialog() {
+export default function RedeemCodeDialog({ triggerVariant = "outline", size = "default", className }: { triggerVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link", size?: "default" | "sm" | "lg" | "icon", className?: string }) {
     const { user } = useAuth()
     const router = useRouter()
     const [open, setOpen] = useState(false)
@@ -82,9 +82,9 @@ export default function RedeemCodeDialog() {
     return (
         <Dialog open={open} onOpenChange={(newOpen) => !isPending && setOpen(newOpen)}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2">
+                <Button variant={triggerVariant} size={size} className={className ? className + " gap-2" : "gap-2"}>
                     <Ticket className="h-4 w-4" />
-                    Use Code
+                    {size === "icon" ? "" : "Use Code"}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">

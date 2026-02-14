@@ -66,7 +66,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
                             </div>
                             <div className="w-full bg-slate-200 h-24 rounded-t-xl flex flex-col justify-center items-center">
                                 <span className="text-slate-600 font-black text-2xl italic">2nd</span>
-                                <Badge variant="outline" className="text-[10px] mt-1 bg-white/50">{topThree[1].xp} XP</Badge>
+                                <Badge variant="outline" className="text-[10px] mt-1 bg-white/50 text-slate-700 font-bold border-slate-300">{topThree[1].xp} XP</Badge>
                             </div>
                         </div>
                     )}
@@ -115,7 +115,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
                             </div>
                             <div className="w-full bg-amber-200 h-20 rounded-t-xl flex flex-col justify-center items-center">
                                 <span className="text-amber-700 font-black text-2xl italic">3rd</span>
-                                <Badge variant="outline" className="text-[10px] mt-1 bg-white/50">{topThree[2].xp} XP</Badge>
+                                <Badge variant="outline" className="text-[10px] mt-1 bg-white/50 text-amber-800 font-bold border-amber-400">{topThree[2].xp} XP</Badge>
                             </div>
                         </div>
                     )}

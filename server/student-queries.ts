@@ -21,7 +21,7 @@ async function getPackageAccessInfo(userId: string, teacherIds: string[]): Promi
     SELECT id, teacher_id, price
     FROM packages
     WHERE teacher_id = ANY(${teacherIds})
-  `) as { id: string; teacher_id: string; price: number | null }[]
+  `) as { id: string; teacher_id: string; price: number | null; grades: number[] | null }[]
 
   for (const pkg of packages) {
     teachersWithPackages.add(pkg.teacher_id)
@@ -299,9 +299,10 @@ export async function getStudentDashboardData(studentId: string, filters: { cate
 
   // 2. Get all packages from all subscribed teachers
   const allPackages = (await sql`
-    SELECT id, name, description, price, thumbnail_url, teacher_id
+    SELECT id, name, description, price, thumbnail_url, teacher_id, grades
     FROM packages
     WHERE teacher_id = ANY(${teacherIds})
+    AND (grades IS NULL OR array_length(grades, 1) IS NULL OR ${user.grade} = ANY(grades))
     ORDER BY created_at DESC
   `) as any[]
 

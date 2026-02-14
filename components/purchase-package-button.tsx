@@ -6,13 +6,18 @@ import { useToast } from "@/hooks/use-toast"
 
 export function PurchasePackageButton({
   pkg,
+  className,
+  variant = "default"
 }: {
   pkg: { id: string; name: string; price: number; teacher_id: string }
+  className?: string
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
 }) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
   async function handleClick() {
+    // ... same logic ...
     setLoading(true)
     try {
       const res = await fetch("/api/purchases/create-package-order", {
@@ -38,8 +43,8 @@ export function PurchasePackageButton({
   }
 
   return (
-    <Button onClick={handleClick} disabled={loading}>
-      {loading ? "Processing..." : `Purchase for ${(pkg.price / 100).toLocaleString("en-US", { style: "currency", currency: "EGP" })}`}
+    <Button onClick={handleClick} disabled={loading} className={className} variant={variant}>
+      {loading ? "Processing..." : `Purchase ${(pkg.price / 100).toLocaleString("en-US", { style: "currency", currency: "EGP" })}`}
     </Button>
   )
 }

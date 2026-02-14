@@ -4,7 +4,7 @@ import SiteHeader from "@/components/site-header"
 export const dynamic = "force-dynamic"
 import { cookies } from "next/headers"
 import Link from "next/link"
-import StudentVideoCard from "@/components/student-video-card"
+import ModernStudentVideoCard from "@/components/modern-student-video-card"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { getCurrentUser } from "@/lib/auth"
@@ -170,15 +170,37 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
         </div>
 
         {teacherVideoGroups.map((teacherGroup) => (
-          <div key={teacherGroup.teacherId} className="mb-16">
-            <h2 className="text-2xl font-bold tracking-tight mb-8">{teacherGroup.teacherName}</h2>
+          <div key={teacherGroup.teacherId} className="mb-16 animate-in slide-in-from-bottom-5 duration-700">
+            <h2 className="text-3xl font-bold tracking-tight mb-8 flex items-center gap-3">
+              <span className="bg-gradient-to-r from-indigo-500 to-purple-600 w-2 h-8 rounded-full" />
+              {teacherGroup.teacherName}
+            </h2>
             {teacherGroup.packages.map((pkg) => (
-              <section key={pkg.id} id={`package-${pkg.id}`} className="grid gap-6 mb-12">
-                <h3 className="text-lg font-semibold tracking-tight">{pkg.name}</h3>
-                {pkg.isAccessible ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {pkg.videos.map((v: any) => (
-                      <StudentVideoCard
+              <section key={pkg.id} id={`package-${pkg.id}`} className="mb-16">
+                <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4">
+                  <h3 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+                    {pkg.name}
+                    {!pkg.isAccessible && (
+                      <span className="text-xs bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20 font-medium">
+                        Locked Package
+                      </span>
+                    )}
+                  </h3>
+                  {/* Package Code Button */}
+                  {!pkg.isAccessible && (
+                    <div className="flex items-center gap-2">
+                      <PurchasePackageButton pkg={pkg} />
+                      <RedeemCodeDialog triggerVariant="ghost" size="sm" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+                  {/* Videos */}
+                  {pkg.videos.map((v: any) => {
+                    const isLocked = !pkg.isAccessible && !v.is_free
+                    return (
+                      <ModernStudentVideoCard
                         key={v.id}
                         id={v.id}
                         title={v.title}
@@ -187,65 +209,41 @@ export default async function StudentPage({ searchParams }: { searchParams?: { e
                         watermarkText={user.name ? `${user.name} • ${user.id}` : user.id}
                         antiDownload
                         hideRedeem={true}
+                        isLocked={isLocked}
+                        isCompleted={false} // Todo: connect with watch history
                       />
-                    ))}
-                    {pkg.videos.length === 0 && (
-                      <p className="text-sm text-muted-foreground col-span-full">
-                        No videos in this package yet.
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="grid gap-6">
-                    {/* Free Videos in this locked package */}
-                    {pkg.videos.some((v: any) => v.is_free) && (
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {pkg.videos.filter((v: any) => v.is_free).map((v: any) => (
-                          <StudentVideoCard
-                            key={v.id}
-                            id={v.id}
-                            title={`${v.title} (مجاني)`}
-                            source={v.url}
-                            thumbnailUrl={v.thumbnail_url || "/course-thumbnail.png"}
-                            watermarkText={user.name ? `${user.name} • ${user.id}` : user.id}
-                            antiDownload
-                            hideRedeem={true}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    )
+                  })}
 
-                    <div className="rounded-lg border-2 border-dashed bg-card/30 text-card-foreground flex flex-col items-center justify-center p-8 aspect-[21/9] min-h-[200px] overflow-hidden min-w-0">
-                      <div className="max-w-md text-center">
-                        <h4 className="text-xl font-bold mb-2">Unlock All: {pkg.name}</h4>
-                        <p className="text-sm text-muted-foreground mb-6">
-                          احصل على وصول كامل لجميع فيديوهات هذا المجلد ({pkg.videos.length - pkg.videos.filter((v: any) => v.is_free).length} فيديو مدفوع).
-                        </p>
-                        <div className="flex flex-wrap gap-3 items-center justify-center">
-                          <PurchasePackageButton pkg={pkg} />
-                          <RedeemCodeDialog />
+                  {/* Empty State */}
+                  {pkg.videos.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                      <p>No videos in this package yet.</p>
+                    </div>
+                  )}
+
+                  {/* Unlock Card for Locked Packages */}
+                  {!pkg.isAccessible && (
+                    <div className="relative group overflow-hidden rounded-2xl border-2 border-dashed border-indigo-500/30 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 hover:bg-indigo-500/10 transition-colors p-6 flex flex-col items-center justify-center text-center min-h-[250px] aspect-video sm:aspect-auto">
+                      <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(to_bottom,transparent,black)]" />
+                      <div className="relative z-10 space-y-4">
+                        <div className="h-12 w-12 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-lg mb-1">Unlock Full Access</h4>
+                          <p className="text-xs text-muted-foreground max-w-[200px] mx-auto">
+                            Get access to all {pkg.videos.length} videos in <strong>{pkg.name}</strong>
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 w-full max-w-[180px]">
+                          <PurchasePackageButton pkg={pkg} className="w-full" />
+                          <RedeemCodeDialog className="w-full" />
                         </div>
                       </div>
                     </div>
-
-                    {/* Locked Teasers */}
-                    {!pkg.videos.some((v: any) => v.is_free) && pkg.videos.length > 0 && (
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-60">
-                        {pkg.videos.slice(0, 3).map((v: any) => (
-                          <div
-                            key={v.id}
-                            className="relative rounded-lg border bg-card/50 text-card-foreground shadow-sm aspect-video flex flex-col items-center justify-center overflow-hidden min-w-0 p-4"
-                          >
-                            <span className="text-sm font-semibold text-center line-clamp-2">{v.title}</span>
-                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground mt-2 inline-flex items-center gap-1">
-                              🔒 محتوى مدفوع
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </section>
             ))}
           </div>
